@@ -1,0 +1,43 @@
+[project]
+name = "bolthole"
+description = "bolthole"
+authors = [{name = "Mark Norman Francis", email = "norm@201created.com"}]
+license = "MIT"
+requires-python = ">=3.10"
+dynamic = [
+    "readme",
+    "version",
+]
+
+[project.optional-dependencies]
+dev = [
+    "flake8",
+    "pytest",
+]
+
+[project.scripts]
+bolthole = "bolthole.cli:main"
+
+[build-system]
+requires = [
+    "hatchling",
+    "hatch-fancy-pypi-readme",
+    "hatch-vcs",
+]
+build-backend = "hatchling.build"
+
+[tool.hatch.version]
+source = "vcs"
+
+[tool.hatch.metadata.hooks.fancy-pypi-readme]
+content-type = "text/markdown"
+
+[[tool.hatch.metadata.hooks.fancy-pypi-readme.fragments]]
+path = "README.md"
+
+[[tool.hatch.metadata.hooks.fancy-pypi-readme.substitutions]]
+pattern = '\[(.+?)\]\((?!https?://)(.+?)\)'
+replacement = '[\1](https://github.com/norm/bolthole/blob/main/\2)'
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
