@@ -41,12 +41,6 @@ teardown() {
 }
 
 @test "--watchdog-debug shows raw events" {
-    expected_output=$(sed -e 's/^        //' <<"        EOF"
-        watchdog: created debug.txt
-        watchdog: deleted debug.txt
-        EOF
-    )
-
     kill $pid 2>/dev/null || true
     wait $pid 2>/dev/null || true
 
@@ -60,6 +54,9 @@ teardown() {
     wait_for_debounce
 
     output=$(cat "$BATS_TEST_TMPDIR/out.txt")
-    diff -u <(echo "$expected_output") <(echo "$output")
-    [ $? -eq 0 ]
+
+    # different OSes generate other events, so look for the
+    # guaranteed ones, rather than comparing a full log
+    echo "$output" | grep -q "watchdog: created debug.txt"
+    echo "$output" | grep -q "watchdog: deleted debug.txt"
 }
