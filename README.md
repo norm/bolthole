@@ -15,8 +15,6 @@ one commit, not many.
 ## Outstanding
 
 - [ ] verbose and debugging output
-- [ ] sync existing files on startup
-- [ ] mirror changes to destination directory
 - [ ] dry run mode
 - [ ] create new repo if destination does not exist
 - [ ] show git commands being executed

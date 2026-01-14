@@ -1,21 +1,14 @@
 #!/usr/bin/env bats
 
-
-function wait_for_debounce {
-    # debounce period is 0.3s, wait a little longer
-    sleep 0.5
-}
+load helpers.bash
 
 setup() {
     mkdir -p "$BATS_TEST_TMPDIR/watch"
-    bolthole "$BATS_TEST_TMPDIR/watch" >"$BATS_TEST_TMPDIR/out.txt" 2>&1 &
-    pid=$!
-    sleep 0.1
+    start_bolthole "$BATS_TEST_TMPDIR/watch"
 }
 
 teardown() {
-    kill $pid 2>/dev/null || true
-    wait $pid 2>/dev/null || true
+    teardown_bolthole
 }
 
 @test "debounce create+delete to no report" {

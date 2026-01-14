@@ -1,4 +1,8 @@
+import filecmp
+import os
+import shutil
 import signal
+import stat
 import threading
 from pathlib import Path
 from types import FrameType
@@ -9,20 +13,98 @@ from watchdog.observers import Observer
 from bolthole.debounce import Event, collapse_events
 
 
+def list_files(
+    directory: Path,
+) -> set[str]:
+    files = set()
+    for path in directory.rglob("*"):
+        if path.is_file():
+            files.add(str(path.relative_to(directory)))
+    return files
+
+
+def apply_event(
+    event: Event,
+    source: Path,
+    dest: Path,
+):
+    if event.type == "renamed":
+        print(f"renamed {event.path} {event.new_path}", flush=True)
+    else:
+        print(f"{event.type} {event.path}", flush=True)
+
+    if event.type in ("created", "modified"):
+        src = source / event.path
+        dst = dest / event.path
+        dst.parent.mkdir(parents=True, exist_ok=True)
+        if dst.exists() and not os.access(dst, os.W_OK):
+            os.chmod(dst, stat.S_IWUSR | stat.S_IRUSR)
+        shutil.copy2(src, dst)
+    elif event.type == "deleted":
+        dst = dest / event.path
+        dst.unlink(missing_ok=True)
+        parent = dst.parent
+        while parent != dest:
+            if not any(parent.iterdir()):
+                parent.rmdir()
+                parent = parent.parent
+            else:
+                break
+    elif event.type == "renamed":
+        old_dst = dest / event.path
+        new_dst = dest / event.new_path
+        old_dst.unlink(missing_ok=True)
+        parent = old_dst.parent
+        while parent != dest:
+            if not any(parent.iterdir()):
+                parent.rmdir()
+                parent = parent.parent
+            else:
+                break
+        new_dst.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(source / event.new_path, new_dst)
+
+
+def initial_sync(
+    source: Path,
+    dest: Path,
+):
+    dest.mkdir(parents=True, exist_ok=True)
+
+    source_files = list_files(source)
+    dest_files = list_files(dest)
+
+    events = []
+    for rel_path in sorted(source_files):
+        if rel_path not in dest_files:
+            events.append(Event("created", rel_path))
+        elif not filecmp.cmp(source / rel_path, dest / rel_path, shallow=False):
+            events.append(Event("modified", rel_path))
+
+    for rel_path in sorted(dest_files - source_files):
+        events.append(Event("deleted", rel_path))
+
+    for event in events:
+        apply_event(event, source, dest)
+
+
 class DebouncingEventHandler(FileSystemEventHandler):
     def __init__(
         self,
         base_path: Path,
+        dest_path: Path | None = None,
         debounce_delay: float = 0.33,
         watchdog_debug: bool = False,
     ):
         super().__init__()
         self.base_path = base_path.resolve()
+        self.dest_path = dest_path.resolve() if dest_path else None
         self.debounce_delay = debounce_delay
         self.watchdog_debug = watchdog_debug
         self.pending_events: list[Event] = []
         self.lock = threading.Lock()
         self.timer: threading.Timer | None = None
+        self.known_files = list_files(self.base_path)
 
     def relative_path(
         self,
@@ -67,7 +149,9 @@ class DebouncingEventHandler(FileSystemEventHandler):
 
         collapsed = collapse_events(events)
         for event in collapsed:
-            if event.type == "renamed":
+            if self.dest_path:
+                apply_event(event, self.base_path, self.dest_path)
+            elif event.type == "renamed":
                 print(f"renamed {event.path} {event.new_path}", flush=True)
             else:
                 print(f"{event.type} {event.path}", flush=True)
@@ -79,7 +163,11 @@ class DebouncingEventHandler(FileSystemEventHandler):
         if event.is_directory:
             return
         path = self.relative_path(event.src_path)
-        self.queue_event(Event("created", path))
+        if path in self.known_files:
+            self.queue_event(Event("modified", path))
+        else:
+            self.known_files.add(path)
+            self.queue_event(Event("created", path))
 
     def on_modified(
         self,
@@ -97,6 +185,7 @@ class DebouncingEventHandler(FileSystemEventHandler):
         if event.is_directory:
             return
         path = self.relative_path(event.src_path)
+        self.known_files.discard(path)
         self.queue_event(Event("deleted", path))
 
     def on_moved(
@@ -107,14 +196,24 @@ class DebouncingEventHandler(FileSystemEventHandler):
             return
         src_path = self.relative_path(event.src_path)
         dst_path = self.relative_path(event.dest_path)
+        self.known_files.discard(src_path)
+        self.known_files.add(dst_path)
         self.queue_event(Event("renamed", src_path, dst_path))
 
 
 def watch(
     source: Path,
+    dest: Path | None = None,
     watchdog_debug: bool = False,
 ):
-    handler = DebouncingEventHandler(source, watchdog_debug=watchdog_debug)
+    if dest:
+        initial_sync(source, dest)
+
+    handler = DebouncingEventHandler(
+        source,
+        dest_path=dest,
+        watchdog_debug=watchdog_debug,
+    )
     observer = Observer()
     observer.schedule(handler, str(source), recursive=True)
 
