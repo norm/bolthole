@@ -3,7 +3,7 @@
 test: flake8 pytest bats
 
 flake8:
-	flake8 bolthole
+	flake8
 
 pytest:
 	pytest

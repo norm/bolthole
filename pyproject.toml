@@ -4,6 +4,9 @@ description = "bolthole"
 authors = [{name = "Mark Norman Francis", email = "norm@201created.com"}]
 license = "MIT"
 requires-python = ">=3.10"
+dependencies = [
+    "watchdog",
+]
 dynamic = [
     "readme",
     "version",

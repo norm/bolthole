@@ -14,8 +14,6 @@ one commit, not many.
 
 ## Outstanding
 
-- [ ] watch source directory for file changes
-- [ ] collapse redundant events (create+delete, rename chains)
 - [ ] verbose and debugging output
 - [ ] sync existing files on startup
 - [ ] mirror changes to destination directory
