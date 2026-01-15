@@ -13,7 +13,17 @@ def main():
         action="version",
         version=f"%(prog)s version v{version('bolthole')}",
     )
-    parser.add_argument("--watchdog-debug", action="store_true")
+    parser.add_argument(
+        "--watchdog-debug",
+        action="store_true",
+        help="show raw filesystem events",
+    )
+    parser.add_argument(
+        "-n",
+        "--dry-run",
+        action="store_true",
+        help="take no actions, but report what would happen",
+    )
     parser.add_argument("source")
     parser.add_argument("dest", nargs="?")
     args = parser.parse_args()
@@ -45,5 +55,6 @@ def main():
     watch(
         source,
         dest=dest,
+        dry_run=args.dry_run,
         watchdog_debug=args.watchdog_debug,
     )

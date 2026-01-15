@@ -8,7 +8,7 @@
 
 @test "help" {
     expected_output=$(sed -e 's/^        //' <<-EOF
-        usage: bolthole [-h] [--version] [--watchdog-debug] source [dest]
+        usage: bolthole [-h] [--version] [--watchdog-debug] [-n] source [dest]
 
         positional arguments:
           source
@@ -17,7 +17,8 @@
         options:
           -h, --help        show this help message and exit
           --version         show program's version number and exit
-          --watchdog-debug
+          --watchdog-debug  show raw filesystem events
+          -n, --dry-run     take no actions, but report what would happen
 	EOF
     )
 
@@ -28,7 +29,7 @@
 
 @test "rejects missing source" {
     expected_output=$(sed -e 's/^        //' <<-EOF
-		usage: bolthole [-h] [--version] [--watchdog-debug] source [dest]
+		usage: bolthole [-h] [--version] [--watchdog-debug] [-n] source [dest]
 		bolthole: error: the following arguments are required: source
 		EOF
     )

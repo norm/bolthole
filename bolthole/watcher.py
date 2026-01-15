@@ -23,15 +23,38 @@ def list_files(
     return files
 
 
+def remove_empty_parents(
+    path: Path,
+    root: Path,
+):
+    parent = path.parent
+    while parent != root:
+        if not any(parent.iterdir()):
+            parent.rmdir()
+            parent = parent.parent
+        else:
+            break
+
+
 def apply_event(
     event: Event,
     source: Path,
     dest: Path,
+    dry_run: bool = False,
 ):
     if event.type == "renamed":
         print(f"renamed {event.path} {event.new_path}", flush=True)
     else:
         print(f"{event.type} {event.path}", flush=True)
+
+    if dry_run:
+        if event.type in ("created", "modified"):
+            print(f'#  copy "{event.path}"', flush=True)
+        elif event.type == "deleted":
+            print(f'#  delete "{event.path}"', flush=True)
+        elif event.type == "renamed":
+            print(f'#  rename "{event.path}" to "{event.new_path}"', flush=True)
+        return
 
     if event.type in ("created", "modified"):
         src = source / event.path
@@ -43,24 +66,12 @@ def apply_event(
     elif event.type == "deleted":
         dst = dest / event.path
         dst.unlink(missing_ok=True)
-        parent = dst.parent
-        while parent != dest:
-            if not any(parent.iterdir()):
-                parent.rmdir()
-                parent = parent.parent
-            else:
-                break
+        remove_empty_parents(dst, dest)
     elif event.type == "renamed":
         old_dst = dest / event.path
         new_dst = dest / event.new_path
         old_dst.unlink(missing_ok=True)
-        parent = old_dst.parent
-        while parent != dest:
-            if not any(parent.iterdir()):
-                parent.rmdir()
-                parent = parent.parent
-            else:
-                break
+        remove_empty_parents(old_dst, dest)
         new_dst.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(source / event.new_path, new_dst)
 
@@ -68,11 +79,13 @@ def apply_event(
 def initial_sync(
     source: Path,
     dest: Path,
+    dry_run: bool = False,
 ):
-    dest.mkdir(parents=True, exist_ok=True)
+    if not dry_run:
+        dest.mkdir(parents=True, exist_ok=True)
 
     source_files = list_files(source)
-    dest_files = list_files(dest)
+    dest_files = list_files(dest) if dest.exists() else set()
 
     events = []
     for rel_path in sorted(source_files):
@@ -85,7 +98,7 @@ def initial_sync(
         events.append(Event("deleted", rel_path))
 
     for event in events:
-        apply_event(event, source, dest)
+        apply_event(event, source, dest, dry_run=dry_run)
 
 
 class DebouncingEventHandler(FileSystemEventHandler):
@@ -94,12 +107,14 @@ class DebouncingEventHandler(FileSystemEventHandler):
         base_path: Path,
         dest_path: Path | None = None,
         debounce_delay: float = 0.33,
+        dry_run: bool = False,
         watchdog_debug: bool = False,
     ):
         super().__init__()
         self.base_path = base_path.resolve()
         self.dest_path = dest_path.resolve() if dest_path else None
         self.debounce_delay = debounce_delay
+        self.dry_run = dry_run
         self.watchdog_debug = watchdog_debug
         self.pending_events: list[Event] = []
         self.lock = threading.Lock()
@@ -150,7 +165,7 @@ class DebouncingEventHandler(FileSystemEventHandler):
         collapsed = collapse_events(events)
         for event in collapsed:
             if self.dest_path:
-                apply_event(event, self.base_path, self.dest_path)
+                apply_event(event, self.base_path, self.dest_path, dry_run=self.dry_run)
             elif event.type == "renamed":
                 print(f"renamed {event.path} {event.new_path}", flush=True)
             else:
@@ -204,14 +219,16 @@ class DebouncingEventHandler(FileSystemEventHandler):
 def watch(
     source: Path,
     dest: Path | None = None,
+    dry_run: bool = False,
     watchdog_debug: bool = False,
 ):
     if dest:
-        initial_sync(source, dest)
+        initial_sync(source, dest, dry_run=dry_run)
 
     handler = DebouncingEventHandler(
         source,
         dest_path=dest,
+        dry_run=dry_run,
         watchdog_debug=watchdog_debug,
     )
     observer = Observer()
