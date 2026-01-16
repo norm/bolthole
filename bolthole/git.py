@@ -22,6 +22,35 @@ class GitRepo:
             check=True,
         )
 
+    def add_all(self):
+        subprocess.run(
+            ["git", "-C", str(self.path), "add", "-A"],
+            check=True,
+        )
+
+    def has_staged_changes(self):
+        result = subprocess.run(
+            ["git", "-C", str(self.path), "diff", "--cached", "--quiet"],
+            capture_output=True,
+        )
+        return result.returncode != 0
+
+    def commit(self, message):
+        if not self.has_staged_changes():
+            return
+        subprocess.run(
+            ["git", "-C", str(self.path), "commit",
+             "-m", message, "--no-verify", "--no-gpg-sign", "--quiet"],
+            check=True,
+        )
+
+    def commit_changes(self, events):
+        if not events:
+            return
+        message = self.generate_commit_message(events)
+        self.add_all()
+        self.commit(message)
+
     @staticmethod
     def generate_commit_message(events):
         if not events:

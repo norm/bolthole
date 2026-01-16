@@ -10,6 +10,8 @@ setup() {
     create_file "dest/to_delete.txt" "to_delete"
     create_file "dest/to_rename.txt" "to_rename"
     init_dest_repo
+    git -C "$BATS_TEST_TMPDIR/dest" add -A
+    git -C "$BATS_TEST_TMPDIR/dest" commit -m "initial" --no-verify --no-gpg-sign --quiet
 
     start_bolthole --timeless "$BATS_TEST_TMPDIR/source" "$BATS_TEST_TMPDIR/dest"
 }
@@ -31,6 +33,7 @@ teardown() {
 
     diff -u <(echo "$expected_output") "$BATS_TEST_TMPDIR/out.txt"
     diff -u "$BATS_TEST_TMPDIR/source/new.txt" "$BATS_TEST_TMPDIR/dest/new.txt"
+    check_commit_message "$BATS_TEST_TMPDIR/dest" "Add new.txt"
 }
 
 @test "modified file copied to destination" {
@@ -44,6 +47,7 @@ teardown() {
 
     diff -u <(echo "$expected_output") "$BATS_TEST_TMPDIR/out.txt"
     diff -u "$BATS_TEST_TMPDIR/source/existing.txt" "$BATS_TEST_TMPDIR/dest/existing.txt"
+    check_commit_message "$BATS_TEST_TMPDIR/dest" "Update existing.txt"
 }
 
 @test "deleted file removed from destination" {
@@ -57,6 +61,7 @@ teardown() {
 
     diff -u <(echo "$expected_output") "$BATS_TEST_TMPDIR/out.txt"
     [ ! -e "$BATS_TEST_TMPDIR/dest/to_delete.txt" ]
+    check_commit_message "$BATS_TEST_TMPDIR/dest" "Remove to_delete.txt"
 }
 
 @test "renamed file handled" {
@@ -71,6 +76,7 @@ teardown() {
     diff -u <(echo "$expected_output") "$BATS_TEST_TMPDIR/out.txt"
     [ ! -e "$BATS_TEST_TMPDIR/dest/to_rename.txt" ]
     diff -u "$BATS_TEST_TMPDIR/source/renamed.txt" "$BATS_TEST_TMPDIR/dest/renamed.txt"
+    check_commit_message "$BATS_TEST_TMPDIR/dest" "Rename to_rename.txt to renamed.txt"
 }
 
 @test "new subdirectory and contents copied" {
@@ -86,4 +92,5 @@ teardown() {
 
     diff -u <(echo "$expected_output") "$BATS_TEST_TMPDIR/out.txt"
     diff -u "$BATS_TEST_TMPDIR/source/subdir/file.txt" "$BATS_TEST_TMPDIR/dest/subdir/file.txt"
+    check_commit_message "$BATS_TEST_TMPDIR/dest" "Add subdir/file.txt"
 }

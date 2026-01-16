@@ -29,3 +29,11 @@ function init_dest_repo {
     mkdir -p "$BATS_TEST_TMPDIR/dest"
     git -C "$BATS_TEST_TMPDIR/dest" init --quiet
 }
+
+function check_commit_message {
+    local repo="$1"
+    local expected="$2"
+    local actual
+    actual=$(git -C "$repo" log -1 --format=%s)
+    diff -u <(echo "$expected") <(echo "$actual")
+}

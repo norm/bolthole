@@ -103,6 +103,7 @@ teardown() {
     diff -u <(echo "$expected_output") "$BATS_TEST_TMPDIR/out.txt"
     [ -d "$BATS_TEST_TMPDIR/dest" ]
     diff -u "$BATS_TEST_TMPDIR/source/file.txt" "$BATS_TEST_TMPDIR/dest/file.txt"
+    check_commit_message "$BATS_TEST_TMPDIR/dest" "Add file.txt"
 }
 
 @test "copies multiple files to destination" {
@@ -120,6 +121,7 @@ teardown() {
     diff -u <(echo "$expected_output") <(sort "$BATS_TEST_TMPDIR/out.txt")
     diff -u "$BATS_TEST_TMPDIR/source/one.txt" "$BATS_TEST_TMPDIR/dest/one.txt"
     diff -u "$BATS_TEST_TMPDIR/source/two.txt" "$BATS_TEST_TMPDIR/dest/two.txt"
+    check_commit_message "$BATS_TEST_TMPDIR/dest" "Add one.txt and two.txt"
 }
 
 @test "copies subdirectories recursively" {
@@ -140,6 +142,7 @@ teardown() {
     diff -u "$BATS_TEST_TMPDIR/source/root.txt" "$BATS_TEST_TMPDIR/dest/root.txt"
     diff -u "$BATS_TEST_TMPDIR/source/sub/sub.txt" "$BATS_TEST_TMPDIR/dest/sub/sub.txt"
     diff -u "$BATS_TEST_TMPDIR/source/sub/nested/nested.txt" "$BATS_TEST_TMPDIR/dest/sub/nested/nested.txt"
+    check_commit_message "$BATS_TEST_TMPDIR/dest" "Add 3 files"
 }
 
 @test "deletes extra files in destination" {
@@ -158,6 +161,7 @@ teardown() {
     diff -u <(echo "$expected_output") <(sort "$BATS_TEST_TMPDIR/out.txt")
     [ -f "$BATS_TEST_TMPDIR/dest/keep.txt" ]
     [ ! -e "$BATS_TEST_TMPDIR/dest/extra.txt" ]
+    check_commit_message "$BATS_TEST_TMPDIR/dest" "Remove extra.txt, add keep.txt"
 }
 
 @test "overwrites read-only files in destination" {
@@ -174,6 +178,7 @@ teardown() {
 
     diff -u <(echo "$expected_output") "$BATS_TEST_TMPDIR/out.txt"
     diff -u "$BATS_TEST_TMPDIR/source/readonly.txt" "$BATS_TEST_TMPDIR/dest/readonly.txt"
+    check_commit_message "$BATS_TEST_TMPDIR/dest" "Update readonly.txt"
 }
 
 @test "skips identical files" {
@@ -191,6 +196,7 @@ teardown() {
     start_bolthole --timeless "$BATS_TEST_TMPDIR/source" "$BATS_TEST_TMPDIR/dest"
 
     diff -u <(echo "$expected_output") "$BATS_TEST_TMPDIR/out.txt"
+    check_commit_message "$BATS_TEST_TMPDIR/dest" "Update different.txt"
 }
 
 @test "deletes extra subdirectory tree in destination" {
@@ -209,6 +215,7 @@ teardown() {
     diff -u <(echo "$expected_output") <(sort "$BATS_TEST_TMPDIR/out.txt")
     [ -f "$BATS_TEST_TMPDIR/dest/keep.txt" ]
     [ ! -e "$BATS_TEST_TMPDIR/dest/extra" ]
+    check_commit_message "$BATS_TEST_TMPDIR/dest" "Remove extra/nested/deep.txt, add keep.txt"
 }
 
 @test "excludes source .git directory" {
@@ -226,4 +233,5 @@ teardown() {
     diff -u <(echo "$expected_output") "$BATS_TEST_TMPDIR/out.txt"
     [ -f "$BATS_TEST_TMPDIR/dest/file.txt" ]
     [ ! -e "$BATS_TEST_TMPDIR/dest/.git/source-marker" ]
+    check_commit_message "$BATS_TEST_TMPDIR/dest" "Add file.txt"
 }

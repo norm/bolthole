@@ -12,6 +12,7 @@ from watchdog.events import FileSystemEvent, FileSystemEventHandler
 from watchdog.observers import Observer
 
 from bolthole.debounce import Event, collapse_events
+from bolthole.git import GitRepo
 
 
 def format_timestamp(timeless: bool) -> str:
@@ -134,6 +135,9 @@ def initial_sync(
             dry_run=dry_run, verbose=False, timeless=timeless,
         )
 
+    if events and not dry_run:
+        GitRepo(dest).commit_changes(events)
+
 
 class DebouncingEventHandler(FileSystemEventHandler):
     def __init__(
@@ -211,6 +215,9 @@ class DebouncingEventHandler(FileSystemEventHandler):
                 )
             elif self.verbose:
                 report_event(event, self.timeless)
+
+        if collapsed and self.dest_path and not self.dry_run:
+            GitRepo(self.dest_path).commit_changes(collapsed)
 
     def on_created(
         self,
