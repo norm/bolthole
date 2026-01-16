@@ -4,7 +4,9 @@ load helpers.bash
 
 setup() {
     mkdir -p "$BATS_TEST_TMPDIR/watch"
-    start_bolthole --timeless -v "$BATS_TEST_TMPDIR/watch"
+    git -C "$BATS_TEST_TMPDIR/watch" init --quiet
+    git -C "$BATS_TEST_TMPDIR/watch" commit --allow-empty -m "initial" --no-verify --no-gpg-sign --quiet
+    start_bolthole -v "$BATS_TEST_TMPDIR/watch"
 }
 
 teardown() {
@@ -44,7 +46,7 @@ teardown() {
     kill $pid 2>/dev/null || true
     wait $pid 2>/dev/null || true
 
-    bolthole --watchdog-debug "$BATS_TEST_TMPDIR/watch" >"$BATS_TEST_TMPDIR/out.txt" 2>&1 &
+    bolthole --timeless --watchdog-debug "$BATS_TEST_TMPDIR/watch" >"$BATS_TEST_TMPDIR/out.txt" 2>&1 &
     pid=$!
     sleep 0.1
 

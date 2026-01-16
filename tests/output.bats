@@ -13,7 +13,9 @@ teardown() {
 }
 
 @test "output includes timestamp" {
-    start_bolthole "$BATS_TEST_TMPDIR/source" "$BATS_TEST_TMPDIR/dest"
+    bolthole "$BATS_TEST_TMPDIR/source" "$BATS_TEST_TMPDIR/dest" >"$BATS_TEST_TMPDIR/out.txt" 2>&1 &
+    pid=$!
+    sleep 0.1
 
     echo "modified" > "$BATS_TEST_TMPDIR/source/file.txt"
     wait_for_debounce
@@ -28,7 +30,7 @@ teardown() {
 	EOF
     )
 
-    start_bolthole --timeless "$BATS_TEST_TMPDIR/source" "$BATS_TEST_TMPDIR/dest"
+    start_bolthole "$BATS_TEST_TMPDIR/source" "$BATS_TEST_TMPDIR/dest"
 
     create_file "source/new.txt" "new"
     wait_for_debounce
@@ -43,7 +45,7 @@ teardown() {
 	EOF
     )
 
-    start_bolthole --timeless -v "$BATS_TEST_TMPDIR/source" "$BATS_TEST_TMPDIR/dest"
+    start_bolthole -v "$BATS_TEST_TMPDIR/source" "$BATS_TEST_TMPDIR/dest"
 
     create_file "source/new.txt" "new"
     wait_for_debounce
@@ -58,7 +60,7 @@ teardown() {
 	EOF
     )
 
-    start_bolthole --timeless -n "$BATS_TEST_TMPDIR/source" "$BATS_TEST_TMPDIR/dest"
+    start_bolthole -n "$BATS_TEST_TMPDIR/source" "$BATS_TEST_TMPDIR/dest"
 
     create_file "source/new.txt" "new"
     wait_for_debounce
@@ -72,7 +74,7 @@ teardown() {
 	EOF
     )
 
-    start_bolthole --timeless "$BATS_TEST_TMPDIR/source" "$BATS_TEST_TMPDIR/dest"
+    start_bolthole "$BATS_TEST_TMPDIR/source" "$BATS_TEST_TMPDIR/dest"
 
     echo "modified" > "$BATS_TEST_TMPDIR/source/file.txt"
     wait_for_debounce
@@ -87,7 +89,7 @@ teardown() {
 	EOF
     )
 
-    start_bolthole --timeless -v "$BATS_TEST_TMPDIR/source" "$BATS_TEST_TMPDIR/dest"
+    start_bolthole -v "$BATS_TEST_TMPDIR/source" "$BATS_TEST_TMPDIR/dest"
 
     echo "modified" > "$BATS_TEST_TMPDIR/source/file.txt"
     wait_for_debounce
@@ -102,7 +104,7 @@ teardown() {
 	EOF
     )
 
-    start_bolthole --timeless -n "$BATS_TEST_TMPDIR/source" "$BATS_TEST_TMPDIR/dest"
+    start_bolthole -n "$BATS_TEST_TMPDIR/source" "$BATS_TEST_TMPDIR/dest"
 
     echo "modified" > "$BATS_TEST_TMPDIR/source/file.txt"
     wait_for_debounce
@@ -116,7 +118,7 @@ teardown() {
 	EOF
     )
 
-    start_bolthole --timeless "$BATS_TEST_TMPDIR/source" "$BATS_TEST_TMPDIR/dest"
+    start_bolthole "$BATS_TEST_TMPDIR/source" "$BATS_TEST_TMPDIR/dest"
 
     rm "$BATS_TEST_TMPDIR/source/file.txt"
     wait_for_debounce
@@ -131,7 +133,7 @@ teardown() {
 	EOF
     )
 
-    start_bolthole --timeless -v "$BATS_TEST_TMPDIR/source" "$BATS_TEST_TMPDIR/dest"
+    start_bolthole -v "$BATS_TEST_TMPDIR/source" "$BATS_TEST_TMPDIR/dest"
 
     rm "$BATS_TEST_TMPDIR/source/file.txt"
     wait_for_debounce
@@ -146,7 +148,7 @@ teardown() {
 	EOF
     )
 
-    start_bolthole --timeless -n "$BATS_TEST_TMPDIR/source" "$BATS_TEST_TMPDIR/dest"
+    start_bolthole -n "$BATS_TEST_TMPDIR/source" "$BATS_TEST_TMPDIR/dest"
 
     rm "$BATS_TEST_TMPDIR/source/file.txt"
     wait_for_debounce
@@ -160,7 +162,7 @@ teardown() {
 	EOF
     )
 
-    start_bolthole --timeless "$BATS_TEST_TMPDIR/source" "$BATS_TEST_TMPDIR/dest"
+    start_bolthole "$BATS_TEST_TMPDIR/source" "$BATS_TEST_TMPDIR/dest"
 
     mv "$BATS_TEST_TMPDIR/source/file.txt" "$BATS_TEST_TMPDIR/source/new.txt"
     wait_for_debounce
@@ -175,7 +177,7 @@ teardown() {
 	EOF
     )
 
-    start_bolthole --timeless -v "$BATS_TEST_TMPDIR/source" "$BATS_TEST_TMPDIR/dest"
+    start_bolthole -v "$BATS_TEST_TMPDIR/source" "$BATS_TEST_TMPDIR/dest"
 
     mv "$BATS_TEST_TMPDIR/source/file.txt" "$BATS_TEST_TMPDIR/source/new.txt"
     wait_for_debounce
@@ -190,7 +192,7 @@ teardown() {
 	EOF
     )
 
-    start_bolthole --timeless -n "$BATS_TEST_TMPDIR/source" "$BATS_TEST_TMPDIR/dest"
+    start_bolthole -n "$BATS_TEST_TMPDIR/source" "$BATS_TEST_TMPDIR/dest"
 
     mv "$BATS_TEST_TMPDIR/source/file.txt" "$BATS_TEST_TMPDIR/source/new.txt"
     wait_for_debounce
@@ -206,7 +208,7 @@ teardown() {
 
     create_file "source/new.txt" "new"
 
-    start_bolthole --timeless -v "$BATS_TEST_TMPDIR/source" "$BATS_TEST_TMPDIR/dest"
+    start_bolthole -v "$BATS_TEST_TMPDIR/source" "$BATS_TEST_TMPDIR/dest"
 
     diff -u <(echo "$expected_output") "$BATS_TEST_TMPDIR/out.txt"
 }
@@ -219,7 +221,7 @@ teardown() {
 
     create_file "source/new.txt" "new"
 
-    start_bolthole --timeless "$BATS_TEST_TMPDIR/source" "$BATS_TEST_TMPDIR/dest"
+    start_bolthole "$BATS_TEST_TMPDIR/source" "$BATS_TEST_TMPDIR/dest"
 
     diff -u <(echo "$expected_output") "$BATS_TEST_TMPDIR/out.txt"
 }
@@ -233,7 +235,7 @@ teardown() {
 
     create_file "source/new.txt" "new"
 
-    start_bolthole --timeless -n "$BATS_TEST_TMPDIR/source" "$BATS_TEST_TMPDIR/dest"
+    start_bolthole -n "$BATS_TEST_TMPDIR/source" "$BATS_TEST_TMPDIR/dest"
 
     diff -u <(echo "$expected_output") "$BATS_TEST_TMPDIR/out.txt"
     [ ! -e "$BATS_TEST_TMPDIR/dest/new.txt" ]
@@ -248,14 +250,18 @@ teardown() {
 
     create_file "dest/extra.txt" "extra"
 
-    start_bolthole --timeless -n "$BATS_TEST_TMPDIR/source" "$BATS_TEST_TMPDIR/dest"
+    start_bolthole -n "$BATS_TEST_TMPDIR/source" "$BATS_TEST_TMPDIR/dest"
 
     diff -u <(echo "$expected_output") "$BATS_TEST_TMPDIR/out.txt"
     [ -f "$BATS_TEST_TMPDIR/dest/extra.txt" ]
 }
 
 @test "single-directory mode silent" {
-    start_bolthole --timeless "$BATS_TEST_TMPDIR/source"
+    git -C "$BATS_TEST_TMPDIR/source" init --quiet
+    git -C "$BATS_TEST_TMPDIR/source" add -A
+    git -C "$BATS_TEST_TMPDIR/source" commit -m "initial" --no-verify --no-gpg-sign --quiet
+
+    start_bolthole "$BATS_TEST_TMPDIR/source"
 
     create_file "source/new.txt" "new"
     wait_for_debounce
@@ -269,7 +275,11 @@ teardown() {
 	EOF
     )
 
-    start_bolthole --timeless -v "$BATS_TEST_TMPDIR/source"
+    git -C "$BATS_TEST_TMPDIR/source" init --quiet
+    git -C "$BATS_TEST_TMPDIR/source" add -A
+    git -C "$BATS_TEST_TMPDIR/source" commit -m "initial" --no-verify --no-gpg-sign --quiet
+
+    start_bolthole -v "$BATS_TEST_TMPDIR/source"
 
     create_file "source/new.txt" "new"
     wait_for_debounce

@@ -49,7 +49,12 @@ def main():
         sys.exit(2)
 
     dest = None
-    if args.dest:
+    if not args.dest:
+        if not GitRepo.is_repo(source):
+            print("error: source must be a git repository in single-directory mode",
+                  file=sys.stderr)
+            sys.exit(2)
+    else:
         dest = Path(args.dest).resolve()
         if source == dest:
             print("error: source and destination cannot be the same",

@@ -13,7 +13,7 @@ setup() {
     git -C "$BATS_TEST_TMPDIR/dest" add -A
     git -C "$BATS_TEST_TMPDIR/dest" commit -m "initial" --no-verify --no-gpg-sign --quiet
 
-    start_bolthole --timeless "$BATS_TEST_TMPDIR/source" "$BATS_TEST_TMPDIR/dest"
+    start_bolthole "$BATS_TEST_TMPDIR/source" "$BATS_TEST_TMPDIR/dest"
 }
 
 teardown() {

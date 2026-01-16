@@ -1,12 +1,17 @@
 import subprocess
 from pathlib import Path
 
+from bolthole.debounce import Event
+
 
 class GitRepo:
     SUBJECT_LINE_LIMIT = 50
 
     def __init__(self, path):
         self.path = Path(path)
+
+    def run_git(self, *args, **kwargs):
+        return subprocess.run(["git", "-C", str(self.path), *args], **kwargs)
 
     @staticmethod
     def is_repo(path):
@@ -17,32 +22,41 @@ class GitRepo:
         return result.returncode == 0
 
     def init(self):
-        subprocess.run(
-            ["git", "-C", str(self.path), "init", "--quiet"],
-            check=True,
-        )
+        self.run_git("init", "--quiet", check=True)
 
     def add_all(self):
-        subprocess.run(
-            ["git", "-C", str(self.path), "add", "-A"],
-            check=True,
-        )
+        self.run_git("add", "-A", check=True)
 
     def has_staged_changes(self):
-        result = subprocess.run(
-            ["git", "-C", str(self.path), "diff", "--cached", "--quiet"],
-            capture_output=True,
-        )
+        result = self.run_git("diff", "--cached", "--quiet", capture_output=True)
         return result.returncode != 0
 
     def commit(self, message):
         if not self.has_staged_changes():
             return
-        subprocess.run(
-            ["git", "-C", str(self.path), "commit",
-             "-m", message, "--no-verify", "--no-gpg-sign", "--quiet"],
+        self.run_git(
+            "commit", "-m", message, "--no-verify", "--no-gpg-sign", "--quiet",
             check=True,
         )
+
+    def get_uncommitted(self):
+        result = self.run_git(
+            "status", "--porcelain",
+            capture_output=True, text=True, check=True,
+        )
+        events = []
+        for line in result.stdout.splitlines():
+            if not line:
+                continue
+            status = line[:2]
+            path = line[3:]
+            if status == "??":
+                events.append(Event("created", path))
+            elif "D" in status:
+                events.append(Event("deleted", path))
+            elif "M" in status or "A" in status:
+                events.append(Event("modified", path))
+        return events
 
     def commit_changes(self, events):
         if not events:

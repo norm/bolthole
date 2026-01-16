@@ -216,8 +216,9 @@ class DebouncingEventHandler(FileSystemEventHandler):
             elif self.verbose:
                 report_event(event, self.timeless)
 
-        if collapsed and self.dest_path and not self.dry_run:
-            GitRepo(self.dest_path).commit_changes(collapsed)
+        if collapsed and not self.dry_run:
+            repo_path = self.dest_path if self.dest_path else self.base_path
+            GitRepo(repo_path).commit_changes(collapsed)
 
     def on_created(
         self,
@@ -274,6 +275,11 @@ def watch(
 ):
     if dest:
         initial_sync(source, dest, dry_run=dry_run, timeless=timeless)
+    elif not dry_run:
+        repo = GitRepo(source)
+        events = repo.get_uncommitted()
+        if events:
+            repo.commit_changes(events)
 
     handler = DebouncingEventHandler(
         source,

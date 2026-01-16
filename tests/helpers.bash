@@ -15,7 +15,7 @@ function wait_for_debounce {
 }
 
 function start_bolthole {
-    bolthole "$@" >"$BATS_TEST_TMPDIR/out.txt" 2>&1 &
+    bolthole --timeless "$@" >"$BATS_TEST_TMPDIR/out.txt" 2>&1 &
     pid=$!
     sleep 0.1
 }
