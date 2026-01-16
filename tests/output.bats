@@ -57,6 +57,8 @@ teardown() {
     expected_output=$(sed -e 's/^        //' <<-EOF
         ++ "new.txt"
         #  copy "new.txt"
+        #  git add -A
+        #  git commit
 	EOF
     )
 
@@ -101,6 +103,8 @@ teardown() {
     expected_output=$(sed -e 's/^        //' <<-EOF
         ++ "file.txt"
         #  copy "file.txt"
+        #  git add -A
+        #  git commit
 	EOF
     )
 
@@ -145,6 +149,8 @@ teardown() {
     expected_output=$(sed -e 's/^        //' <<-EOF
         -- "file.txt"
         #  delete "file.txt"
+        #  git add -A
+        #  git commit
 	EOF
     )
 
@@ -189,6 +195,8 @@ teardown() {
     expected_output=$(sed -e 's/^        //' <<-EOF
         ++ "file.txt" -> "new.txt"
         #  rename "file.txt" to "new.txt"
+        #  git add -A
+        #  git commit
 	EOF
     )
 
@@ -230,6 +238,8 @@ teardown() {
     expected_output=$(sed -e 's/^        //' <<-EOF
         ++ "new.txt"
         #  copy "new.txt"
+        #  git add -A
+        #  git commit
 	EOF
     )
 
@@ -245,6 +255,8 @@ teardown() {
     expected_output=$(sed -e 's/^        //' <<-EOF
         -- "extra.txt"
         #  delete "extra.txt"
+        #  git add -A
+        #  git commit
 	EOF
     )
 
@@ -285,4 +297,22 @@ teardown() {
     wait_for_debounce
 
     diff -u <(echo "$expected_output") "$BATS_TEST_TMPDIR/out.txt"
+}
+
+@test "dry run shows git commands" {
+    expected_output=$(sed -e 's/^        //' <<-EOF
+        ++ "new.txt"
+        #  copy "new.txt"
+        #  git add -A
+        #  git commit
+	EOF
+    )
+
+    start_bolthole -n "$BATS_TEST_TMPDIR/source" "$BATS_TEST_TMPDIR/dest"
+
+    create_file "source/new.txt" "new"
+    wait_for_debounce
+
+    diff -u <(echo "$expected_output") "$BATS_TEST_TMPDIR/out.txt"
+    ! git -C "$BATS_TEST_TMPDIR/dest" log -1 2>/dev/null
 }

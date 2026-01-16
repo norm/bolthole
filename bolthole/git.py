@@ -7,10 +7,36 @@ from bolthole.debounce import Event
 class GitRepo:
     SUBJECT_LINE_LIMIT = 50
 
-    def __init__(self, path):
+    def __init__(self, path, dry_run=False):
         self.path = Path(path)
+        self.dry_run = dry_run
+
+    EXCLUDE_FLAGS = {
+        "--no-verify",
+        "--no-gpg-sign",
+        "--quiet",
+    }
+    EXCLUDE_OPTIONS = {
+        "-m",
+        "-C",
+    }
 
     def run_git(self, *args, **kwargs):
+        if self.dry_run:
+            parts = []
+            skip_next = False
+            for arg in args:
+                if skip_next:
+                    skip_next = False
+                    continue
+                if arg in self.EXCLUDE_FLAGS:
+                    continue
+                if arg in self.EXCLUDE_OPTIONS:
+                    skip_next = True
+                    continue
+                parts.append(arg)
+            print(f"#  git {' '.join(parts)}", flush=True)
+            return subprocess.CompletedProcess(args=[], returncode=0)
         return subprocess.run(["git", "-C", str(self.path), *args], **kwargs)
 
     @staticmethod
@@ -32,7 +58,7 @@ class GitRepo:
         return result.returncode != 0
 
     def commit(self, message):
-        if not self.has_staged_changes():
+        if not self.dry_run and not self.has_staged_changes():
             return
         self.run_git(
             "commit", "-m", message, "--no-verify", "--no-gpg-sign", "--quiet",

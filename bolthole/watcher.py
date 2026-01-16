@@ -135,8 +135,8 @@ def initial_sync(
             dry_run=dry_run, verbose=False, timeless=timeless,
         )
 
-    if events and not dry_run:
-        GitRepo(dest).commit_changes(events)
+    if events:
+        GitRepo(dest, dry_run=dry_run).commit_changes(events)
 
 
 class DebouncingEventHandler(FileSystemEventHandler):
@@ -216,9 +216,9 @@ class DebouncingEventHandler(FileSystemEventHandler):
             elif self.verbose:
                 report_event(event, self.timeless)
 
-        if collapsed and not self.dry_run:
+        if collapsed:
             repo_path = self.dest_path if self.dest_path else self.base_path
-            GitRepo(repo_path).commit_changes(collapsed)
+            GitRepo(repo_path, dry_run=self.dry_run).commit_changes(collapsed)
 
     def on_created(
         self,
@@ -275,8 +275,8 @@ def watch(
 ):
     if dest:
         initial_sync(source, dest, dry_run=dry_run, timeless=timeless)
-    elif not dry_run:
-        repo = GitRepo(source)
+    else:
+        repo = GitRepo(source, dry_run=dry_run)
         events = repo.get_uncommitted()
         if events:
             repo.commit_changes(events)
