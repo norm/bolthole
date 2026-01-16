@@ -4,6 +4,7 @@ import shutil
 import signal
 import stat
 import threading
+from datetime import datetime
 from pathlib import Path
 from types import FrameType
 
@@ -11,6 +12,32 @@ from watchdog.events import FileSystemEvent, FileSystemEventHandler
 from watchdog.observers import Observer
 
 from bolthole.debounce import Event, collapse_events
+
+
+def format_timestamp(timeless: bool) -> str:
+    if timeless:
+        return ""
+    return datetime.now().strftime("%H:%M:%S ")
+
+
+def report_event(event: Event, timeless: bool):
+    ts = format_timestamp(timeless)
+    if event.type == "renamed":
+        print(f'{ts}   "{event.path}" renamed "{event.new_path}"', flush=True)
+    elif event.type == "modified":
+        print(f'{ts}   "{event.path}" updated', flush=True)
+    else:
+        print(f'{ts}   "{event.path}" {event.type}', flush=True)
+
+
+def report_action(event: Event, timeless: bool):
+    ts = format_timestamp(timeless)
+    if event.type == "renamed":
+        print(f'{ts}++ "{event.path}" -> "{event.new_path}"', flush=True)
+    elif event.type == "deleted":
+        print(f'{ts}-- "{event.path}"', flush=True)
+    else:
+        print(f'{ts}++ "{event.path}"', flush=True)
 
 
 def list_files(
@@ -41,11 +68,12 @@ def apply_event(
     source: Path,
     dest: Path,
     dry_run: bool = False,
+    verbose: bool = False,
+    timeless: bool = False,
 ):
-    if event.type == "renamed":
-        print(f"renamed {event.path} {event.new_path}", flush=True)
-    else:
-        print(f"{event.type} {event.path}", flush=True)
+    if verbose:
+        report_event(event, timeless)
+    report_action(event, timeless)
 
     if dry_run:
         if event.type in ("created", "modified"):
@@ -80,6 +108,7 @@ def initial_sync(
     source: Path,
     dest: Path,
     dry_run: bool = False,
+    timeless: bool = False,
 ):
     if not dry_run:
         dest.mkdir(parents=True, exist_ok=True)
@@ -98,7 +127,10 @@ def initial_sync(
         events.append(Event("deleted", rel_path))
 
     for event in events:
-        apply_event(event, source, dest, dry_run=dry_run)
+        apply_event(
+            event, source, dest,
+            dry_run=dry_run, verbose=False, timeless=timeless,
+        )
 
 
 class DebouncingEventHandler(FileSystemEventHandler):
@@ -108,6 +140,8 @@ class DebouncingEventHandler(FileSystemEventHandler):
         dest_path: Path | None = None,
         debounce_delay: float = 0.33,
         dry_run: bool = False,
+        verbose: bool = False,
+        timeless: bool = False,
         watchdog_debug: bool = False,
     ):
         super().__init__()
@@ -115,6 +149,8 @@ class DebouncingEventHandler(FileSystemEventHandler):
         self.dest_path = dest_path.resolve() if dest_path else None
         self.debounce_delay = debounce_delay
         self.dry_run = dry_run
+        self.verbose = verbose
+        self.timeless = timeless
         self.watchdog_debug = watchdog_debug
         self.pending_events: list[Event] = []
         self.lock = threading.Lock()
@@ -165,11 +201,14 @@ class DebouncingEventHandler(FileSystemEventHandler):
         collapsed = collapse_events(events)
         for event in collapsed:
             if self.dest_path:
-                apply_event(event, self.base_path, self.dest_path, dry_run=self.dry_run)
-            elif event.type == "renamed":
-                print(f"renamed {event.path} {event.new_path}", flush=True)
-            else:
-                print(f"{event.type} {event.path}", flush=True)
+                apply_event(
+                    event, self.base_path, self.dest_path,
+                    dry_run=self.dry_run,
+                    verbose=self.verbose,
+                    timeless=self.timeless,
+                )
+            elif self.verbose:
+                report_event(event, self.timeless)
 
     def on_created(
         self,
@@ -220,15 +259,19 @@ def watch(
     source: Path,
     dest: Path | None = None,
     dry_run: bool = False,
+    verbose: bool = False,
+    timeless: bool = False,
     watchdog_debug: bool = False,
 ):
     if dest:
-        initial_sync(source, dest, dry_run=dry_run)
+        initial_sync(source, dest, dry_run=dry_run, timeless=timeless)
 
     handler = DebouncingEventHandler(
         source,
         dest_path=dest,
         dry_run=dry_run,
+        verbose=verbose,
+        timeless=timeless,
         watchdog_debug=watchdog_debug,
     )
     observer = Observer()

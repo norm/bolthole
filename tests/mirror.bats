@@ -10,7 +10,7 @@ setup() {
     create_file "dest/to_delete.txt" "to_delete"
     create_file "dest/to_rename.txt" "to_rename"
 
-    start_bolthole "$BATS_TEST_TMPDIR/source" "$BATS_TEST_TMPDIR/dest"
+    start_bolthole --timeless "$BATS_TEST_TMPDIR/source" "$BATS_TEST_TMPDIR/dest"
 }
 
 teardown() {
@@ -19,7 +19,7 @@ teardown() {
 
 @test "new file copied to destination" {
     expected_output=$(sed -e 's/^        //' <<-EOF
-        created new.txt
+        ++ "new.txt"
 	EOF
     )
 
@@ -34,7 +34,7 @@ teardown() {
 
 @test "modified file copied to destination" {
     expected_output=$(sed -e 's/^        //' <<-EOF
-        modified existing.txt
+        ++ "existing.txt"
 	EOF
     )
 
@@ -47,7 +47,7 @@ teardown() {
 
 @test "deleted file removed from destination" {
     expected_output=$(sed -e 's/^        //' <<-EOF
-        deleted to_delete.txt
+        -- "to_delete.txt"
 	EOF
     )
 
@@ -60,7 +60,7 @@ teardown() {
 
 @test "renamed file handled" {
     expected_output=$(sed -e 's/^        //' <<-EOF
-        renamed to_rename.txt renamed.txt
+        ++ "to_rename.txt" -> "renamed.txt"
 	EOF
     )
 
@@ -74,7 +74,7 @@ teardown() {
 
 @test "new subdirectory and contents copied" {
     expected_output=$(sed -e 's/^        //' <<-EOF
-        created subdir/file.txt
+        ++ "subdir/file.txt"
 	EOF
     )
 

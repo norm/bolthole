@@ -4,7 +4,7 @@ load helpers.bash
 
 setup() {
     mkdir -p "$BATS_TEST_TMPDIR/watch"
-    start_bolthole "$BATS_TEST_TMPDIR/watch"
+    start_bolthole --timeless -v "$BATS_TEST_TMPDIR/watch"
 }
 
 teardown() {
@@ -26,7 +26,7 @@ teardown() {
 
 @test "debounce create+modify to create" {
     expected_output=$(sed -e 's/^        //' <<-EOF
-        created file.txt
+           "file.txt" created
 	EOF
     )
 

@@ -24,6 +24,17 @@ def main():
         action="store_true",
         help="take no actions, but report what would happen",
     )
+    parser.add_argument(
+        "-v",
+        "--verbose",
+        action="store_true",
+        help="show file updates as well as actions taken",
+    )
+    parser.add_argument(
+        "--timeless",
+        action="store_true",
+        help="omit timestamps from output",
+    )
     parser.add_argument("source")
     parser.add_argument("dest", nargs="?")
     args = parser.parse_args()
@@ -56,5 +67,7 @@ def main():
         source,
         dest=dest,
         dry_run=args.dry_run,
+        verbose=args.verbose,
+        timeless=args.timeless,
         watchdog_debug=args.watchdog_debug,
     )
