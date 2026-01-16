@@ -45,7 +45,7 @@ bats_require_minimum_version 1.7.0
 
 @test "rejects non-existent source directory" {
     expected_output=$(sed -e 's/^        //' <<-EOF
-        bolthole: error: source directory does not exist: /nonexistent/path
+        error: source directory does not exist: /nonexistent/path
 	EOF
     )
 

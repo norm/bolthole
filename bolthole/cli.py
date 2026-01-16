@@ -43,7 +43,7 @@ def main():
     source = Path(args.source).resolve()
     if not source.exists():
         print(
-            f"bolthole: error: source directory does not exist: {args.source}",
+            f"error: source directory does not exist: {args.source}",
             file=sys.stderr,
         )
         sys.exit(2)
