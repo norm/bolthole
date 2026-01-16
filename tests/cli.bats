@@ -1,4 +1,4 @@
-#!/usr/bin/env bats
+bats_require_minimum_version 1.7.0
 
 @test "version" {
     run bolthole --version
@@ -29,9 +29,9 @@
 
 @test "rejects missing source" {
     expected_output=$(sed -e 's/^        //' <<-EOF
-		usage: bolthole [-h] [--version] [--watchdog-debug] [-n] source [dest]
-		bolthole: error: the following arguments are required: source
-		EOF
+        usage: bolthole [-h] [--version] [--watchdog-debug] [-n] source [dest]
+        bolthole: error: the following arguments are required: source
+	EOF
     )
 
     run bolthole
@@ -41,8 +41,8 @@
 
 @test "rejects non-existent source directory" {
     expected_output=$(sed -e 's/^        //' <<-EOF
-		bolthole: error: source directory does not exist: /nonexistent/path
-		EOF
+        bolthole: error: source directory does not exist: /nonexistent/path
+	EOF
     )
 
     run bolthole /nonexistent/path
@@ -51,12 +51,12 @@
 }
 
 @test "rejects source same as dest" {
-    mkdir -p "$BATS_TEST_TMPDIR/dir"
-
-    expected_output=$(sed -e 's/^        //' <<"        EOF"
+    expected_output=$(sed -e 's/^        //' <<-EOF
         error: source and destination cannot be the same
-        EOF
+	EOF
     )
+
+    mkdir -p "$BATS_TEST_TMPDIR/dir"
 
     run bolthole "$BATS_TEST_TMPDIR/dir" "$BATS_TEST_TMPDIR/dir"
     diff -u <(echo "$expected_output") <(echo "$output")
@@ -64,12 +64,12 @@
 }
 
 @test "rejects source inside dest" {
-    mkdir -p "$BATS_TEST_TMPDIR/dest/source"
-
-    expected_output=$(sed -e 's/^        //' <<"        EOF"
+    expected_output=$(sed -e 's/^        //' <<-EOF
         error: source cannot be inside destination
-        EOF
+	EOF
     )
+
+    mkdir -p "$BATS_TEST_TMPDIR/dest/source"
 
     run bolthole "$BATS_TEST_TMPDIR/dest/source" "$BATS_TEST_TMPDIR/dest"
     diff -u <(echo "$expected_output") <(echo "$output")
@@ -77,12 +77,12 @@
 }
 
 @test "rejects dest inside source" {
-    mkdir -p "$BATS_TEST_TMPDIR/source/dest"
-
-    expected_output=$(sed -e 's/^        //' <<"        EOF"
+    expected_output=$(sed -e 's/^        //' <<-EOF
         error: destination cannot be inside source
-        EOF
+	EOF
     )
+
+    mkdir -p "$BATS_TEST_TMPDIR/source/dest"
 
     run bolthole "$BATS_TEST_TMPDIR/source" "$BATS_TEST_TMPDIR/source/dest"
     diff -u <(echo "$expected_output") <(echo "$output")

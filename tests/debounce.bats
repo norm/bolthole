@@ -1,4 +1,4 @@
-#!/usr/bin/env bats
+bats_require_minimum_version 1.7.0
 
 load helpers.bash
 
@@ -25,9 +25,9 @@ teardown() {
 }
 
 @test "debounce create+modify to create" {
-    expected_output=$(sed -e 's/^        //' <<"        EOF"
+    expected_output=$(sed -e 's/^        //' <<-EOF
         created file.txt
-        EOF
+	EOF
     )
 
     touch "$BATS_TEST_TMPDIR/watch/file.txt"
