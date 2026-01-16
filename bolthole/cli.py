@@ -3,6 +3,7 @@ import sys
 from importlib.metadata import version
 from pathlib import Path
 
+from bolthole.git import GitRepo
 from bolthole.watcher import watch
 
 
@@ -62,6 +63,17 @@ def main():
             print("error: destination cannot be inside source",
                   file=sys.stderr)
             sys.exit(2)
+
+        if GitRepo.is_repo(dest):
+            pass
+        elif dest.exists() and any(dest.iterdir()):
+            print("error: destination exists but is not a git repository",
+                  file=sys.stderr)
+            sys.exit(2)
+        elif not args.dry_run:
+            dest.mkdir(parents=True, exist_ok=True)
+            repo = GitRepo(dest)
+            repo.init()
 
     watch(
         source,

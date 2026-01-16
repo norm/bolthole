@@ -46,7 +46,9 @@ def list_files(
     files = set()
     for path in directory.rglob("*"):
         if path.is_file():
-            files.add(str(path.relative_to(directory)))
+            rel = str(path.relative_to(directory))
+            if not rel.startswith(".git/") and rel != ".git":
+                files.add(rel)
     return files
 
 

@@ -5,6 +5,7 @@ load helpers.bash
 setup() {
     create_file "source/file.txt" "content"
     create_file "dest/file.txt" "content"
+    init_dest_repo
 }
 
 teardown() {

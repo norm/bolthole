@@ -9,6 +9,7 @@ setup() {
     create_file "dest/existing.txt" "existing"
     create_file "dest/to_delete.txt" "to_delete"
     create_file "dest/to_rename.txt" "to_rename"
+    init_dest_repo
 
     start_bolthole --timeless "$BATS_TEST_TMPDIR/source" "$BATS_TEST_TMPDIR/dest"
 }

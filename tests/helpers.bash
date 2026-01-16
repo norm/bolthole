@@ -24,3 +24,8 @@ function teardown_bolthole {
     kill $pid 2>/dev/null || true
     wait $pid 2>/dev/null || true
 }
+
+function init_dest_repo {
+    mkdir -p "$BATS_TEST_TMPDIR/dest"
+    git -C "$BATS_TEST_TMPDIR/dest" init --quiet
+}
