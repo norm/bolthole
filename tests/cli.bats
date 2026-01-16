@@ -9,6 +9,7 @@ bats_require_minimum_version 1.7.0
 @test "help" {
     expected_output=$(sed -e 's/^        //' <<-EOF
         usage: bolthole [-h] [--version] [--watchdog-debug] [-n] [-v] [--timeless]
+                        [--ignore PATTERN]
                         source [dest]
 
         positional arguments:
@@ -22,6 +23,7 @@ bats_require_minimum_version 1.7.0
           -n, --dry-run     take no actions, but report what would happen
           -v, --verbose     show file updates as well as actions taken
           --timeless        omit timestamps from output
+          --ignore PATTERN  ignore files matching pattern (repeatable)
 	EOF
     )
 
@@ -33,6 +35,7 @@ bats_require_minimum_version 1.7.0
 @test "rejects missing source" {
     expected_output=$(sed -e 's/^        //' <<-EOF
         usage: bolthole [-h] [--version] [--watchdog-debug] [-n] [-v] [--timeless]
+                        [--ignore PATTERN]
                         source [dest]
         bolthole: error: the following arguments are required: source
 	EOF

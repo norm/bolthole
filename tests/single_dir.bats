@@ -35,9 +35,7 @@ teardown() {
 
 @test "modification committed" {
     create_file "source/existing.txt" "original"
-    git -C "$BATS_TEST_TMPDIR/source" init --quiet
-    git -C "$BATS_TEST_TMPDIR/source" add -A
-    git -C "$BATS_TEST_TMPDIR/source" commit -m "initial" --no-verify --no-gpg-sign --quiet
+    init_source_repo
 
     start_bolthole "$BATS_TEST_TMPDIR/source"
 
@@ -49,9 +47,7 @@ teardown() {
 
 @test "deletion committed" {
     create_file "source/to_delete.txt" "delete me"
-    git -C "$BATS_TEST_TMPDIR/source" init --quiet
-    git -C "$BATS_TEST_TMPDIR/source" add -A
-    git -C "$BATS_TEST_TMPDIR/source" commit -m "initial" --no-verify --no-gpg-sign --quiet
+    init_source_repo
 
     start_bolthole "$BATS_TEST_TMPDIR/source"
 
@@ -63,9 +59,7 @@ teardown() {
 
 @test "rename committed" {
     create_file "source/old_name.txt" "content"
-    git -C "$BATS_TEST_TMPDIR/source" init --quiet
-    git -C "$BATS_TEST_TMPDIR/source" add -A
-    git -C "$BATS_TEST_TMPDIR/source" commit -m "initial" --no-verify --no-gpg-sign --quiet
+    init_source_repo
 
     start_bolthole "$BATS_TEST_TMPDIR/source"
 
@@ -78,9 +72,7 @@ teardown() {
 @test "changes committed on startup" {
     create_file "source/to_modify.txt" "original"
     create_file "source/to_delete.txt" "delete me"
-    git -C "$BATS_TEST_TMPDIR/source" init --quiet
-    git -C "$BATS_TEST_TMPDIR/source" add -A
-    git -C "$BATS_TEST_TMPDIR/source" commit -m "initial" --no-verify --no-gpg-sign --quiet
+    init_source_repo
 
     create_file "source/new.txt" "new"
     echo "modified" > "$BATS_TEST_TMPDIR/source/to_modify.txt"
@@ -101,4 +93,17 @@ teardown() {
 
     actual=$(git -C "$BATS_TEST_TMPDIR/source" log -1 --format=%s)
     [ "$actual" = "initial" ]
+}
+
+@test "multiple files committed together" {
+    git -C "$BATS_TEST_TMPDIR/source" init --quiet
+    git -C "$BATS_TEST_TMPDIR/source" commit --allow-empty -m "initial" --no-verify --no-gpg-sign --quiet
+
+    start_bolthole "$BATS_TEST_TMPDIR/source"
+
+    create_file "source/one.txt" "one"
+    create_file "source/two.txt" "two"
+    wait_for_debounce
+
+    check_commit_message "$BATS_TEST_TMPDIR/source" "Add one.txt and two.txt"
 }

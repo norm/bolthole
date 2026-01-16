@@ -28,6 +28,20 @@ function teardown_bolthole {
 function init_dest_repo {
     mkdir -p "$BATS_TEST_TMPDIR/dest"
     git -C "$BATS_TEST_TMPDIR/dest" init --quiet
+
+    if [ $# -gt 0 ]; then
+        for file in "$@"; do
+            create_file "dest/$file" "$file"
+        done
+        git -C "$BATS_TEST_TMPDIR/dest" add -A
+        git -C "$BATS_TEST_TMPDIR/dest" commit -m "initial" --no-verify --no-gpg-sign --quiet
+    fi
+}
+
+function init_source_repo {
+    git -C "$BATS_TEST_TMPDIR/source" init --quiet
+    git -C "$BATS_TEST_TMPDIR/source" add -A
+    git -C "$BATS_TEST_TMPDIR/source" commit -m "initial" --no-verify --no-gpg-sign --quiet
 }
 
 function check_commit_message {

@@ -1,4 +1,5 @@
 import filecmp
+import fnmatch
 import os
 import shutil
 import signal
@@ -13,6 +14,17 @@ from watchdog.observers import Observer
 
 from bolthole.debounce import Event, collapse_events
 from bolthole.git import GitRepo
+
+
+def should_ignore(rel_path: str, patterns: list[str]) -> bool:
+    parts = Path(rel_path).parts
+    for pattern in patterns:
+        if fnmatch.fnmatch(rel_path, pattern):
+            return True
+        for part in parts:
+            if fnmatch.fnmatch(part, pattern):
+                return True
+    return False
 
 
 def format_timestamp(timeless: bool) -> str:
@@ -43,12 +55,13 @@ def report_action(event: Event, timeless: bool):
 
 def list_files(
     directory: Path,
+    ignore_patterns: list[str],
 ) -> set[str]:
     files = set()
     for path in directory.rglob("*"):
         if path.is_file():
             rel = str(path.relative_to(directory))
-            if not rel.startswith(".git/") and rel != ".git":
+            if not should_ignore(rel, ignore_patterns):
                 files.add(rel)
     return files
 
@@ -112,12 +125,16 @@ def initial_sync(
     dest: Path,
     dry_run: bool = False,
     timeless: bool = False,
+    ignore_patterns: list[str] | None = None,
 ):
+    if ignore_patterns is None:
+        ignore_patterns = [".git"]
+
     if not dry_run:
         dest.mkdir(parents=True, exist_ok=True)
 
-    source_files = list_files(source)
-    dest_files = list_files(dest) if dest.exists() else set()
+    source_files = list_files(source, ignore_patterns)
+    dest_files = list_files(dest, ignore_patterns) if dest.exists() else set()
 
     events = []
     for rel_path in sorted(source_files):
@@ -149,6 +166,7 @@ class DebouncingEventHandler(FileSystemEventHandler):
         verbose: bool = False,
         timeless: bool = False,
         watchdog_debug: bool = False,
+        ignore_patterns: list[str] | None = None,
     ):
         super().__init__()
         self.base_path = base_path.resolve()
@@ -158,10 +176,14 @@ class DebouncingEventHandler(FileSystemEventHandler):
         self.verbose = verbose
         self.timeless = timeless
         self.watchdog_debug = watchdog_debug
+        if ignore_patterns is not None:
+            self.ignore_patterns = ignore_patterns
+        else:
+            self.ignore_patterns = [".git"]
         self.pending_events: list[Event] = []
         self.lock = threading.Lock()
         self.timer: threading.Timer | None = None
-        self.known_files = list_files(self.base_path)
+        self.known_files = list_files(self.base_path, self.ignore_patterns)
 
     def relative_path(
         self,
@@ -227,6 +249,8 @@ class DebouncingEventHandler(FileSystemEventHandler):
         if event.is_directory:
             return
         path = self.relative_path(event.src_path)
+        if should_ignore(path, self.ignore_patterns):
+            return
         if path in self.known_files:
             self.queue_event(Event("modified", path))
         else:
@@ -240,6 +264,8 @@ class DebouncingEventHandler(FileSystemEventHandler):
         if event.is_directory:
             return
         path = self.relative_path(event.src_path)
+        if should_ignore(path, self.ignore_patterns):
+            return
         self.queue_event(Event("modified", path))
 
     def on_deleted(
@@ -249,6 +275,8 @@ class DebouncingEventHandler(FileSystemEventHandler):
         if event.is_directory:
             return
         path = self.relative_path(event.src_path)
+        if should_ignore(path, self.ignore_patterns):
+            return
         self.known_files.discard(path)
         self.queue_event(Event("deleted", path))
 
@@ -260,9 +288,21 @@ class DebouncingEventHandler(FileSystemEventHandler):
             return
         src_path = self.relative_path(event.src_path)
         dst_path = self.relative_path(event.dest_path)
-        self.known_files.discard(src_path)
-        self.known_files.add(dst_path)
-        self.queue_event(Event("renamed", src_path, dst_path))
+        src_ignored = should_ignore(src_path, self.ignore_patterns)
+        dst_ignored = should_ignore(dst_path, self.ignore_patterns)
+
+        if src_ignored and dst_ignored:
+            return
+        elif src_ignored:
+            self.known_files.add(dst_path)
+            self.queue_event(Event("created", dst_path))
+        elif dst_ignored:
+            self.known_files.discard(src_path)
+            self.queue_event(Event("deleted", src_path))
+        else:
+            self.known_files.discard(src_path)
+            self.known_files.add(dst_path)
+            self.queue_event(Event("renamed", src_path, dst_path))
 
 
 def watch(
@@ -272,9 +312,19 @@ def watch(
     verbose: bool = False,
     timeless: bool = False,
     watchdog_debug: bool = False,
+    ignore_patterns: list[str] | None = None,
 ):
+    if ignore_patterns is None:
+        ignore_patterns = []
+    ignore_patterns = [".git"] + ignore_patterns
+
     if dest:
-        initial_sync(source, dest, dry_run=dry_run, timeless=timeless)
+        initial_sync(
+            source, dest,
+            dry_run=dry_run,
+            timeless=timeless,
+            ignore_patterns=ignore_patterns,
+        )
     else:
         repo = GitRepo(source, dry_run=dry_run)
         events = repo.get_uncommitted()
@@ -288,6 +338,7 @@ def watch(
         verbose=verbose,
         timeless=timeless,
         watchdog_debug=watchdog_debug,
+        ignore_patterns=ignore_patterns,
     )
     observer = Observer()
     observer.schedule(handler, str(source), recursive=True)

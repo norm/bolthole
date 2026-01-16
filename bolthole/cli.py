@@ -36,6 +36,13 @@ def main():
         action="store_true",
         help="omit timestamps from output",
     )
+    parser.add_argument(
+        "--ignore",
+        action="append",
+        default=[],
+        metavar="PATTERN",
+        help="ignore files matching pattern (repeatable)",
+    )
     parser.add_argument("source")
     parser.add_argument("dest", nargs="?")
     args = parser.parse_args()
@@ -87,4 +94,5 @@ def main():
         verbose=args.verbose,
         timeless=args.timeless,
         watchdog_debug=args.watchdog_debug,
+        ignore_patterns=args.ignore,
     )

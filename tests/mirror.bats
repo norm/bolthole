@@ -94,3 +94,18 @@ teardown() {
     diff -u "$BATS_TEST_TMPDIR/source/subdir/file.txt" "$BATS_TEST_TMPDIR/dest/subdir/file.txt"
     check_commit_message "$BATS_TEST_TMPDIR/dest" "Add subdir/file.txt"
 }
+
+@test "multiple files committed together" {
+    expected_output=$(sed -e 's/^        //' <<-EOF
+        ++ "one.txt"
+        ++ "two.txt"
+	EOF
+    )
+
+    echo "one" > "$BATS_TEST_TMPDIR/source/one.txt"
+    echo "two" > "$BATS_TEST_TMPDIR/source/two.txt"
+    wait_for_debounce
+
+    diff -u <(echo "$expected_output") <(sort "$BATS_TEST_TMPDIR/out.txt")
+    check_commit_message "$BATS_TEST_TMPDIR/dest" "Add one.txt and two.txt"
+}
