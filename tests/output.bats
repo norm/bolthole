@@ -58,7 +58,7 @@ teardown() {
     expected_output=$(sed -e 's/^        //' <<-EOF
         ++ "new.txt"
         #  copy "new.txt"
-        #  git add -A
+        #  git add -- new.txt
         #  git commit
 	EOF
     )
@@ -104,7 +104,7 @@ teardown() {
     expected_output=$(sed -e 's/^        //' <<-EOF
         ++ "file.txt"
         #  copy "file.txt"
-        #  git add -A
+        #  git add -- file.txt
         #  git commit
 	EOF
     )
@@ -150,7 +150,7 @@ teardown() {
     expected_output=$(sed -e 's/^        //' <<-EOF
         -- "file.txt"
         #  delete "file.txt"
-        #  git add -A
+        #  git add -- file.txt
         #  git commit
 	EOF
     )
@@ -196,7 +196,7 @@ teardown() {
     expected_output=$(sed -e 's/^        //' <<-EOF
         ++ "file.txt" -> "new.txt"
         #  rename "file.txt" to "new.txt"
-        #  git add -A
+        #  git add -- file.txt new.txt
         #  git commit
 	EOF
     )
@@ -239,7 +239,7 @@ teardown() {
     expected_output=$(sed -e 's/^        //' <<-EOF
         ++ "new.txt"
         #  copy "new.txt"
-        #  git add -A
+        #  git add -- new.txt
         #  git commit
 	EOF
     )
@@ -256,7 +256,7 @@ teardown() {
     expected_output=$(sed -e 's/^        //' <<-EOF
         -- "extra.txt"
         #  delete "extra.txt"
-        #  git add -A
+        #  git add -- extra.txt
         #  git commit
 	EOF
     )
@@ -300,7 +300,7 @@ teardown() {
     expected_output=$(sed -e 's/^        //' <<-EOF
         ++ "new.txt"
         #  copy "new.txt"
-        #  git add -A
+        #  git add -- new.txt
         #  git commit
 	EOF
     )
@@ -316,7 +316,7 @@ teardown() {
 
 @test "display selective git commands" {
     expected_output=$(sed -e 's/^        //' <<-EOF
-        %  git add -A
+        %  git add -- new.txt
         %  git commit
 	EOF
     )

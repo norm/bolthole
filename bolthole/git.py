@@ -76,13 +76,15 @@ class GitRepo:
 
     def get_uncommitted(self):
         result = self.run_git(
-            "status", "--porcelain",
+            "status", "--porcelain", "-z",
             capture_output=True, text=True, check=True,
         )
         events = []
-        for line in result.stdout.splitlines():
-            status = line[:2]
-            path = line[3:]
+        for entry in result.stdout.split("\0"):
+            if not entry:
+                continue
+            status = entry[:2]
+            path = entry[3:]
             if status == "??":
                 events.append(Event("created", path))
             elif "D" in status:
@@ -115,7 +117,12 @@ class GitRepo:
     def commit_changes(self, events):
         if not events:
             return
-        self.add_all()
+        paths = []
+        for event in events:
+            paths.append(event.path)
+            if event.new_path:
+                paths.append(event.new_path)
+        self.run_git("add", "--", *paths)
         if self.dry_run:
             message = self.generate_commit_message(events)
         else:

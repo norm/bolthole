@@ -385,7 +385,7 @@ teardown() {
     check_commit_message "$BATS_TEST_TMPDIR/source" "Add visible.txt"
 }
 
-@test "source move into ignored directory commits rename" {
+@test "source move into ignored directory commits removal" {
     create_file "source/existing.txt" "existing.txt"
     create_file "source/visible.txt" "visible.txt"
     create_file "source/.hidden/.gitkeep" ""
@@ -396,10 +396,10 @@ teardown() {
     mv "$BATS_TEST_TMPDIR/source/visible.txt" "$BATS_TEST_TMPDIR/source/.hidden/visible.txt"
     wait_for_debounce
 
-    check_commit_message "$BATS_TEST_TMPDIR/source" "Rename visible.txt to .hidden/visible.txt"
+    check_commit_message "$BATS_TEST_TMPDIR/source" "Remove visible.txt"
 }
 
-@test "source move out of ignored directory commits rename" {
+@test "source move out of ignored directory commits addition" {
     create_file "source/existing.txt" "existing.txt"
     create_file "source/.hidden/hidden.txt" "hidden"
     init_source_repo
@@ -409,7 +409,7 @@ teardown() {
     mv "$BATS_TEST_TMPDIR/source/.hidden/hidden.txt" "$BATS_TEST_TMPDIR/source/visible.txt"
     wait_for_debounce
 
-    check_commit_message "$BATS_TEST_TMPDIR/source" "Rename .hidden/hidden.txt to visible.txt"
+    check_commit_message "$BATS_TEST_TMPDIR/source" "Add visible.txt"
 }
 
 @test "concurrent ignored and non-ignored modifications only copies non-ignored" {
