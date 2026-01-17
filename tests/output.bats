@@ -270,8 +270,7 @@ teardown() {
 
 @test "single-directory mode silent" {
     git -C "$BATS_TEST_TMPDIR/source" init --quiet
-    git -C "$BATS_TEST_TMPDIR/source" add -A
-    git -C "$BATS_TEST_TMPDIR/source" commit -m "initial" --no-verify --no-gpg-sign --quiet
+    add_file_to_repo "source/file.txt" "content"
 
     start_bolthole "$BATS_TEST_TMPDIR/source"
 
@@ -288,8 +287,7 @@ teardown() {
     )
 
     git -C "$BATS_TEST_TMPDIR/source" init --quiet
-    git -C "$BATS_TEST_TMPDIR/source" add -A
-    git -C "$BATS_TEST_TMPDIR/source" commit -m "initial" --no-verify --no-gpg-sign --quiet
+    add_file_to_repo "source/file.txt" "content"
 
     start_bolthole -v "$BATS_TEST_TMPDIR/source"
 

@@ -123,13 +123,10 @@ def apply_event(
 def initial_sync(
     source: Path,
     dest: Path,
+    ignore_patterns: list[str],
     dry_run: bool = False,
     timeless: bool = False,
-    ignore_patterns: list[str] | None = None,
 ):
-    if ignore_patterns is None:
-        ignore_patterns = [".git"]
-
     if not dry_run:
         dest.mkdir(parents=True, exist_ok=True)
 
@@ -160,13 +157,13 @@ class DebouncingEventHandler(FileSystemEventHandler):
     def __init__(
         self,
         base_path: Path,
+        ignore_patterns: list[str],
         dest_path: Path | None = None,
         debounce_delay: float = 0.33,
         dry_run: bool = False,
         verbose: bool = False,
         timeless: bool = False,
         watchdog_debug: bool = False,
-        ignore_patterns: list[str] | None = None,
     ):
         super().__init__()
         self.base_path = base_path.resolve()
@@ -176,10 +173,7 @@ class DebouncingEventHandler(FileSystemEventHandler):
         self.verbose = verbose
         self.timeless = timeless
         self.watchdog_debug = watchdog_debug
-        if ignore_patterns is not None:
-            self.ignore_patterns = ignore_patterns
-        else:
-            self.ignore_patterns = [".git"]
+        self.ignore_patterns = ignore_patterns
         self.pending_events: list[Event] = []
         self.lock = threading.Lock()
         self.timer: threading.Timer | None = None
@@ -316,7 +310,7 @@ def watch(
 ):
     if ignore_patterns is None:
         ignore_patterns = []
-    ignore_patterns = [".git"] + ignore_patterns
+    ignore_patterns = [".git", ".gitignore"] + ignore_patterns
 
     if dest:
         initial_sync(

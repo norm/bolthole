@@ -6,12 +6,10 @@ setup() {
     create_file "source/existing.txt" "existing"
     create_file "source/to_delete.txt" "to_delete"
     create_file "source/to_rename.txt" "to_rename"
-    create_file "dest/existing.txt" "existing"
-    create_file "dest/to_delete.txt" "to_delete"
-    create_file "dest/to_rename.txt" "to_rename"
     init_dest_repo
-    git -C "$BATS_TEST_TMPDIR/dest" add -A
-    git -C "$BATS_TEST_TMPDIR/dest" commit -m "initial" --no-verify --no-gpg-sign --quiet
+    add_file_to_repo "dest/existing.txt" "existing"
+    add_file_to_repo "dest/to_delete.txt" "to_delete"
+    add_file_to_repo "dest/to_rename.txt" "to_rename"
 
     start_bolthole "$BATS_TEST_TMPDIR/source" "$BATS_TEST_TMPDIR/dest"
 }

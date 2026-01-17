@@ -84,11 +84,40 @@ class GitRepo:
                 events.append(Event("modified", path))
         return events
 
+    def get_staged(self):
+        result = self.run_git(
+            "diff", "--cached", "--name-status",
+            capture_output=True, text=True, check=True,
+        )
+        events = []
+        for line in result.stdout.splitlines():
+            if not line:
+                continue
+            parts = line.split("\t")
+            status = parts[0]
+            path = parts[1]
+            if status == "A":
+                events.append(Event("created", path))
+            elif status == "D":
+                events.append(Event("deleted", path))
+            elif status == "M":
+                events.append(Event("modified", path))
+            elif status.startswith("R"):
+                new_path = parts[2]
+                events.append(Event("renamed", path, new_path))
+        return events
+
     def commit_changes(self, events):
         if not events:
             return
-        message = self.generate_commit_message(events)
         self.add_all()
+        if self.dry_run:
+            message = self.generate_commit_message(events)
+        else:
+            staged = self.get_staged()
+            if not staged:
+                return
+            message = self.generate_commit_message(staged)
         self.commit(message)
 
     @staticmethod

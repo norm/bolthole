@@ -44,6 +44,24 @@ function init_source_repo {
     git -C "$BATS_TEST_TMPDIR/source" commit -m "initial" --no-verify --no-gpg-sign --quiet
 }
 
+function init_source_gitignore {
+    local gitignore_content="$1"
+    git -C "$BATS_TEST_TMPDIR/source" init --quiet
+    printf "%s\n" "$gitignore_content" > "$BATS_TEST_TMPDIR/source/.gitignore"
+    git -C "$BATS_TEST_TMPDIR/source" add -A
+    git -C "$BATS_TEST_TMPDIR/source" commit -m "initial" --no-verify --no-gpg-sign --quiet
+}
+
+function add_file_to_repo {
+    local path="$1"
+    local content="$2"
+    local repo="${path%%/*}"
+    local file="${path#*/}"
+    create_file "$path" "$content"
+    git -C "$BATS_TEST_TMPDIR/$repo" add -- "$file"
+    git -C "$BATS_TEST_TMPDIR/$repo" commit -m "add $file" --no-verify --no-gpg-sign --quiet
+}
+
 function check_commit_message {
     local repo="$1"
     local expected="$2"

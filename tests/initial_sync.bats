@@ -153,8 +153,7 @@ teardown() {
     )
 
     create_file "source/keep.txt" "keep"
-    create_file "dest/extra.txt" "extra"
-    init_dest_repo
+    init_dest_repo extra.txt
 
     start_bolthole "$BATS_TEST_TMPDIR/source" "$BATS_TEST_TMPDIR/dest"
 
@@ -171,8 +170,9 @@ teardown() {
     )
 
     create_file "source/readonly.txt" "new content"
-    create_file "dest/readonly.txt" "old content" 444
     init_dest_repo
+    add_file_to_repo "dest/readonly.txt" "old content"
+    chmod 444 "$BATS_TEST_TMPDIR/dest/readonly.txt"
 
     start_bolthole "$BATS_TEST_TMPDIR/source" "$BATS_TEST_TMPDIR/dest"
 
@@ -189,9 +189,9 @@ teardown() {
 
     create_file "source/same.txt" "identical"
     create_file "source/different.txt" "new"
-    create_file "dest/same.txt" "identical"
-    create_file "dest/different.txt" "old"
     init_dest_repo
+    add_file_to_repo "dest/same.txt" "identical"
+    add_file_to_repo "dest/different.txt" "old"
 
     start_bolthole "$BATS_TEST_TMPDIR/source" "$BATS_TEST_TMPDIR/dest"
 
@@ -207,8 +207,8 @@ teardown() {
     )
 
     create_file "source/keep.txt" "keep"
-    create_file "dest/extra/nested/deep.txt" "extra"
     init_dest_repo
+    add_file_to_repo "dest/extra/nested/deep.txt" "extra"
 
     start_bolthole "$BATS_TEST_TMPDIR/source" "$BATS_TEST_TMPDIR/dest"
 
