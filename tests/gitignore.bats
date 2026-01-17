@@ -84,7 +84,7 @@ teardown() {
 @test "source modified gitignored file not committed" {
     create_file "source/existing.txt" "existing"
     create_file "source/ignored.log" "original"
-    init_source_gitignore "*.log"
+    init_source_repo --gitignore "*.log"
 
     start_bolthole "$BATS_TEST_TMPDIR/source"
 
@@ -106,7 +106,7 @@ teardown() {
 @test "source concurrent tracked and gitignored changes commits only tracked" {
     create_file "source/tracked.txt" "original"
     create_file "source/ignored.log" "original"
-    init_source_gitignore "*.log"
+    init_source_repo --gitignore "*.log"
 
     start_bolthole "$BATS_TEST_TMPDIR/source"
 

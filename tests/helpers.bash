@@ -1,3 +1,8 @@
+export GIT_AUTHOR_NAME="Test User"
+export GIT_AUTHOR_EMAIL="test@example.com"
+export GIT_COMMITTER_NAME="Test User"
+export GIT_COMMITTER_EMAIL="test@example.com"
+
 function create_file {
     local path="$BATS_TEST_TMPDIR/$1"
     local content="$2"
@@ -55,14 +60,9 @@ function init_dest_repo {
 
 function init_source_repo {
     git -C "$BATS_TEST_TMPDIR/source" init --quiet
-    git -C "$BATS_TEST_TMPDIR/source" add -A
-    git -C "$BATS_TEST_TMPDIR/source" commit -m "initial" --no-verify --no-gpg-sign --quiet
-}
-
-function init_source_gitignore {
-    local gitignore_content="$1"
-    git -C "$BATS_TEST_TMPDIR/source" init --quiet
-    printf "%s\n" "$gitignore_content" > "$BATS_TEST_TMPDIR/source/.gitignore"
+    if [ "$1" = "--gitignore" ]; then
+        printf "%s\n" "$2" > "$BATS_TEST_TMPDIR/source/.gitignore"
+    fi
     git -C "$BATS_TEST_TMPDIR/source" add -A
     git -C "$BATS_TEST_TMPDIR/source" commit -m "initial" --no-verify --no-gpg-sign --quiet
 }

@@ -22,8 +22,8 @@ teardown() {
 }
 
 @test "new file committed" {
-    git -C "$BATS_TEST_TMPDIR/source" init --quiet
-    git -C "$BATS_TEST_TMPDIR/source" commit --allow-empty -m "initial" --no-verify --no-gpg-sign --quiet
+    create_file "source/existing.txt" "existing"
+    init_source_repo
 
     start_bolthole "$BATS_TEST_TMPDIR/source"
 
@@ -85,8 +85,8 @@ teardown() {
 }
 
 @test "no changes" {
-    git -C "$BATS_TEST_TMPDIR/source" init --quiet
-    git -C "$BATS_TEST_TMPDIR/source" commit --allow-empty -m "initial" --no-verify --no-gpg-sign --quiet
+    create_file "source/existing.txt" "existing"
+    init_source_repo
 
     start_bolthole "$BATS_TEST_TMPDIR/source"
     sleep 0.2
@@ -96,8 +96,8 @@ teardown() {
 }
 
 @test "multiple files committed together" {
-    git -C "$BATS_TEST_TMPDIR/source" init --quiet
-    git -C "$BATS_TEST_TMPDIR/source" commit --allow-empty -m "initial" --no-verify --no-gpg-sign --quiet
+    create_file "source/existing.txt" "existing"
+    init_source_repo
 
     start_bolthole "$BATS_TEST_TMPDIR/source"
 
