@@ -235,3 +235,21 @@ teardown() {
     [ ! -e "$BATS_TEST_TMPDIR/dest/.git/source-marker" ]
     check_commit_message "$BATS_TEST_TMPDIR/dest" "Add file.txt"
 }
+
+@test "commits pre-existing uncommitted file in dest" {
+    expected_output=$(sed -e 's/^        //' <<-EOF
+        ++ "new.txt"
+	EOF
+    )
+
+    create_file "source/existing.txt" "content"
+    create_file "source/new.txt" "new"
+    init_dest_repo
+    create_file "dest/existing.txt" "content"
+
+    start_bolthole "$BATS_TEST_TMPDIR/source" "$BATS_TEST_TMPDIR/dest"
+    teardown_bolthole
+
+    diff -u <(echo "$expected_output") <(bolthole_log)
+    check_commit_message "$BATS_TEST_TMPDIR/dest" "Add existing.txt and new.txt"
+}

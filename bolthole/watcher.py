@@ -150,12 +150,14 @@ def initial_sync(
             dry_run=dry_run, verbose=False, timeless=timeless,
         )
 
-    if events:
-        GitRepo(
-            dest,
-            dry_run=dry_run,
-            show_git=show_git,
-        ).commit_changes(events)
+    repo = GitRepo(dest, dry_run=dry_run, show_git=show_git)
+    if dry_run:
+        if events:
+            repo.commit_changes(events)
+    else:
+        uncommitted = repo.get_uncommitted()
+        if uncommitted:
+            repo.commit_changes(uncommitted)
 
 
 class DebouncingEventHandler(FileSystemEventHandler):
