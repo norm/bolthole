@@ -10,14 +10,29 @@ function create_file {
 }
 
 function wait_for_debounce {
-    # debounce period is 0.33s, wait a little longer
-    sleep 0.5
+    # debounce period is 0.1s, wait longer for processing and commit
+    sleep 0.2
+}
+
+function wait_for_bolthole_ready {
+    for i in {1..50}; do
+        if grep -qE "^   (Copying|Watching) " "$BATS_TEST_TMPDIR/out.txt" 2>/dev/null; then
+            return 0
+        fi
+        sleep 0.02
+    done
+    echo "bolthole did not become ready" >&2
+    return 1
 }
 
 function start_bolthole {
     bolthole --timeless "$@" >"$BATS_TEST_TMPDIR/out.txt" 2>&1 &
     pid=$!
-    sleep 0.2
+    wait_for_bolthole_ready
+}
+
+function bolthole_log {
+    sed -e '/^   Copying /d' -e '/^   Watching /d' "$BATS_TEST_TMPDIR/out.txt"
 }
 
 function teardown_bolthole {

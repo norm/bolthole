@@ -29,7 +29,7 @@ teardown() {
     echo "hello" > "$BATS_TEST_TMPDIR/source/new.txt"
     wait_for_debounce
 
-    diff -u <(echo "$expected_output") "$BATS_TEST_TMPDIR/out.txt"
+    diff -u <(echo "$expected_output") <(bolthole_log)
     diff -u "$BATS_TEST_TMPDIR/source/new.txt" "$BATS_TEST_TMPDIR/dest/new.txt"
     check_commit_message "$BATS_TEST_TMPDIR/dest" "Add new.txt"
 }
@@ -43,7 +43,7 @@ teardown() {
     echo "modified" > "$BATS_TEST_TMPDIR/source/existing.txt"
     wait_for_debounce
 
-    diff -u <(echo "$expected_output") "$BATS_TEST_TMPDIR/out.txt"
+    diff -u <(echo "$expected_output") <(bolthole_log)
     diff -u "$BATS_TEST_TMPDIR/source/existing.txt" "$BATS_TEST_TMPDIR/dest/existing.txt"
     check_commit_message "$BATS_TEST_TMPDIR/dest" "Update existing.txt"
 }
@@ -57,7 +57,7 @@ teardown() {
     rm "$BATS_TEST_TMPDIR/source/to_delete.txt"
     wait_for_debounce
 
-    diff -u <(echo "$expected_output") "$BATS_TEST_TMPDIR/out.txt"
+    diff -u <(echo "$expected_output") <(bolthole_log)
     [ ! -e "$BATS_TEST_TMPDIR/dest/to_delete.txt" ]
     check_commit_message "$BATS_TEST_TMPDIR/dest" "Remove to_delete.txt"
 }
@@ -71,7 +71,7 @@ teardown() {
     mv "$BATS_TEST_TMPDIR/source/to_rename.txt" "$BATS_TEST_TMPDIR/source/renamed.txt"
     wait_for_debounce
 
-    diff -u <(echo "$expected_output") "$BATS_TEST_TMPDIR/out.txt"
+    diff -u <(echo "$expected_output") <(bolthole_log)
     [ ! -e "$BATS_TEST_TMPDIR/dest/to_rename.txt" ]
     diff -u "$BATS_TEST_TMPDIR/source/renamed.txt" "$BATS_TEST_TMPDIR/dest/renamed.txt"
     check_commit_message "$BATS_TEST_TMPDIR/dest" "Rename to_rename.txt to renamed.txt"
@@ -88,7 +88,7 @@ teardown() {
     create_file "source/subdir/file.txt" "nested"
     wait_for_debounce
 
-    diff -u <(echo "$expected_output") "$BATS_TEST_TMPDIR/out.txt"
+    diff -u <(echo "$expected_output") <(bolthole_log)
     diff -u "$BATS_TEST_TMPDIR/source/subdir/file.txt" "$BATS_TEST_TMPDIR/dest/subdir/file.txt"
     check_commit_message "$BATS_TEST_TMPDIR/dest" "Add subdir/file.txt"
 }
@@ -104,6 +104,6 @@ teardown() {
     echo "two" > "$BATS_TEST_TMPDIR/source/two.txt"
     wait_for_debounce
 
-    diff -u <(echo "$expected_output") <(sort "$BATS_TEST_TMPDIR/out.txt")
+    diff -u <(echo "$expected_output") <(bolthole_log)
     check_commit_message "$BATS_TEST_TMPDIR/dest" "Add one.txt and two.txt"
 }

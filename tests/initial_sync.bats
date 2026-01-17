@@ -18,7 +18,7 @@ teardown() {
     start_bolthole "$BATS_TEST_TMPDIR/source" "$BATS_TEST_TMPDIR/dest"
     teardown_bolthole
 
-    diff -u <(echo -n "$expected_output") "$BATS_TEST_TMPDIR/out.txt"
+    diff -u <(echo -n "$expected_output") <(bolthole_log)
     [ -d "$BATS_TEST_TMPDIR/dest" ]
     [ -d "$BATS_TEST_TMPDIR/dest/.git" ]
 }
@@ -33,7 +33,7 @@ teardown() {
     start_bolthole "$BATS_TEST_TMPDIR/source" "$BATS_TEST_TMPDIR/dest"
     teardown_bolthole
 
-    diff -u <(echo -n "$expected_output") "$BATS_TEST_TMPDIR/out.txt"
+    diff -u <(echo -n "$expected_output") <(bolthole_log)
     [ -d "$BATS_TEST_TMPDIR/dest/.git" ]
 }
 
@@ -45,7 +45,7 @@ teardown() {
     start_bolthole -n "$BATS_TEST_TMPDIR/source" "$BATS_TEST_TMPDIR/dest"
     teardown_bolthole
 
-    diff -u <(echo -n "$expected_output") "$BATS_TEST_TMPDIR/out.txt"
+    diff -u <(echo -n "$expected_output") <(bolthole_log)
     [ ! -e "$BATS_TEST_TMPDIR/dest" ]
 }
 
@@ -85,7 +85,7 @@ teardown() {
     start_bolthole "$BATS_TEST_TMPDIR/source" "$BATS_TEST_TMPDIR/dest"
     teardown_bolthole
 
-    diff -u <(echo -n "$expected_output") "$BATS_TEST_TMPDIR/out.txt"
+    diff -u <(echo -n "$expected_output") <(bolthole_log)
     diff -u <(echo "marker") "$BATS_TEST_TMPDIR/dest/.git/info/exclude"
 }
 
@@ -100,7 +100,7 @@ teardown() {
 
     start_bolthole "$BATS_TEST_TMPDIR/source" "$BATS_TEST_TMPDIR/dest"
 
-    diff -u <(echo "$expected_output") "$BATS_TEST_TMPDIR/out.txt"
+    diff -u <(echo "$expected_output") <(bolthole_log)
     [ -d "$BATS_TEST_TMPDIR/dest" ]
     diff -u "$BATS_TEST_TMPDIR/source/file.txt" "$BATS_TEST_TMPDIR/dest/file.txt"
     check_commit_message "$BATS_TEST_TMPDIR/dest" "Add file.txt"
@@ -118,7 +118,7 @@ teardown() {
 
     start_bolthole "$BATS_TEST_TMPDIR/source" "$BATS_TEST_TMPDIR/dest"
 
-    diff -u <(echo "$expected_output") <(sort "$BATS_TEST_TMPDIR/out.txt")
+    diff -u <(echo "$expected_output") <(bolthole_log | sort)
     diff -u "$BATS_TEST_TMPDIR/source/one.txt" "$BATS_TEST_TMPDIR/dest/one.txt"
     diff -u "$BATS_TEST_TMPDIR/source/two.txt" "$BATS_TEST_TMPDIR/dest/two.txt"
     check_commit_message "$BATS_TEST_TMPDIR/dest" "Add one.txt and two.txt"
@@ -138,7 +138,7 @@ teardown() {
 
     start_bolthole "$BATS_TEST_TMPDIR/source" "$BATS_TEST_TMPDIR/dest"
 
-    diff -u <(echo "$expected_output") <(sort "$BATS_TEST_TMPDIR/out.txt")
+    diff -u <(echo "$expected_output") <(bolthole_log | sort)
     diff -u "$BATS_TEST_TMPDIR/source/root.txt" "$BATS_TEST_TMPDIR/dest/root.txt"
     diff -u "$BATS_TEST_TMPDIR/source/sub/sub.txt" "$BATS_TEST_TMPDIR/dest/sub/sub.txt"
     diff -u "$BATS_TEST_TMPDIR/source/sub/nested/nested.txt" "$BATS_TEST_TMPDIR/dest/sub/nested/nested.txt"
@@ -157,7 +157,7 @@ teardown() {
 
     start_bolthole "$BATS_TEST_TMPDIR/source" "$BATS_TEST_TMPDIR/dest"
 
-    diff -u <(echo "$expected_output") <(sort "$BATS_TEST_TMPDIR/out.txt")
+    diff -u <(echo "$expected_output") <(bolthole_log | sort)
     [ -f "$BATS_TEST_TMPDIR/dest/keep.txt" ]
     [ ! -e "$BATS_TEST_TMPDIR/dest/extra.txt" ]
     check_commit_message "$BATS_TEST_TMPDIR/dest" "Remove extra.txt, add keep.txt"
@@ -176,7 +176,7 @@ teardown() {
 
     start_bolthole "$BATS_TEST_TMPDIR/source" "$BATS_TEST_TMPDIR/dest"
 
-    diff -u <(echo "$expected_output") "$BATS_TEST_TMPDIR/out.txt"
+    diff -u <(echo "$expected_output") <(bolthole_log)
     diff -u "$BATS_TEST_TMPDIR/source/readonly.txt" "$BATS_TEST_TMPDIR/dest/readonly.txt"
     check_commit_message "$BATS_TEST_TMPDIR/dest" "Update readonly.txt"
 }
@@ -195,7 +195,7 @@ teardown() {
 
     start_bolthole "$BATS_TEST_TMPDIR/source" "$BATS_TEST_TMPDIR/dest"
 
-    diff -u <(echo "$expected_output") "$BATS_TEST_TMPDIR/out.txt"
+    diff -u <(echo "$expected_output") <(bolthole_log)
     check_commit_message "$BATS_TEST_TMPDIR/dest" "Update different.txt"
 }
 
@@ -212,7 +212,7 @@ teardown() {
 
     start_bolthole "$BATS_TEST_TMPDIR/source" "$BATS_TEST_TMPDIR/dest"
 
-    diff -u <(echo "$expected_output") <(sort "$BATS_TEST_TMPDIR/out.txt")
+    diff -u <(echo "$expected_output") <(bolthole_log | sort)
     [ -f "$BATS_TEST_TMPDIR/dest/keep.txt" ]
     [ ! -e "$BATS_TEST_TMPDIR/dest/extra" ]
     check_commit_message "$BATS_TEST_TMPDIR/dest" "Remove extra/nested/deep.txt, add keep.txt"
@@ -230,7 +230,7 @@ teardown() {
 
     start_bolthole "$BATS_TEST_TMPDIR/source" "$BATS_TEST_TMPDIR/dest"
 
-    diff -u <(echo "$expected_output") "$BATS_TEST_TMPDIR/out.txt"
+    diff -u <(echo "$expected_output") <(bolthole_log)
     [ -f "$BATS_TEST_TMPDIR/dest/file.txt" ]
     [ ! -e "$BATS_TEST_TMPDIR/dest/.git/source-marker" ]
     check_commit_message "$BATS_TEST_TMPDIR/dest" "Add file.txt"

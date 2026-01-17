@@ -15,12 +15,13 @@ teardown() {
 @test "output includes timestamp" {
     bolthole "$BATS_TEST_TMPDIR/source" "$BATS_TEST_TMPDIR/dest" >"$BATS_TEST_TMPDIR/out.txt" 2>&1 &
     pid=$!
-    sleep 0.1
+    wait_for_bolthole_ready
 
     echo "modified" > "$BATS_TEST_TMPDIR/source/file.txt"
     wait_for_debounce
 
-    output=$(cat "$BATS_TEST_TMPDIR/out.txt")
+    output=$(tail -n +2 "$BATS_TEST_TMPDIR/out.txt")
+    echo "$output"
     [[ "$output" =~ ^[0-9]{2}:[0-9]{2}:[0-9]{2}\ \+\+\ \"file\.txt\"$ ]]
 }
 
@@ -35,7 +36,7 @@ teardown() {
     create_file "source/new.txt" "new"
     wait_for_debounce
 
-    diff -u <(echo "$expected_output") "$BATS_TEST_TMPDIR/out.txt"
+    diff -u <(echo "$expected_output") <(bolthole_log)
 }
 
 @test "new file and event" {
@@ -50,7 +51,7 @@ teardown() {
     create_file "source/new.txt" "new"
     wait_for_debounce
 
-    diff -u <(echo "$expected_output") "$BATS_TEST_TMPDIR/out.txt"
+    diff -u <(echo "$expected_output") <(bolthole_log)
 }
 
 @test "new file dry run" {
@@ -67,7 +68,7 @@ teardown() {
     create_file "source/new.txt" "new"
     wait_for_debounce
 
-    diff -u <(echo "$expected_output") "$BATS_TEST_TMPDIR/out.txt"
+    diff -u <(echo "$expected_output") <(bolthole_log)
 }
 
 @test "modified file" {
@@ -81,7 +82,7 @@ teardown() {
     echo "modified" > "$BATS_TEST_TMPDIR/source/file.txt"
     wait_for_debounce
 
-    diff -u <(echo "$expected_output") "$BATS_TEST_TMPDIR/out.txt"
+    diff -u <(echo "$expected_output") <(bolthole_log)
 }
 
 @test "modified file and event" {
@@ -96,7 +97,7 @@ teardown() {
     echo "modified" > "$BATS_TEST_TMPDIR/source/file.txt"
     wait_for_debounce
 
-    diff -u <(echo "$expected_output") "$BATS_TEST_TMPDIR/out.txt"
+    diff -u <(echo "$expected_output") <(bolthole_log)
 }
 
 @test "modified file dry run" {
@@ -113,7 +114,7 @@ teardown() {
     echo "modified" > "$BATS_TEST_TMPDIR/source/file.txt"
     wait_for_debounce
 
-    diff -u <(echo "$expected_output") "$BATS_TEST_TMPDIR/out.txt"
+    diff -u <(echo "$expected_output") <(bolthole_log)
 }
 
 @test "deleted file" {
@@ -127,7 +128,7 @@ teardown() {
     rm "$BATS_TEST_TMPDIR/source/file.txt"
     wait_for_debounce
 
-    diff -u <(echo "$expected_output") "$BATS_TEST_TMPDIR/out.txt"
+    diff -u <(echo "$expected_output") <(bolthole_log)
 }
 
 @test "deleted file and event" {
@@ -142,7 +143,7 @@ teardown() {
     rm "$BATS_TEST_TMPDIR/source/file.txt"
     wait_for_debounce
 
-    diff -u <(echo "$expected_output") "$BATS_TEST_TMPDIR/out.txt"
+    diff -u <(echo "$expected_output") <(bolthole_log)
 }
 
 @test "deleted file dry run" {
@@ -159,7 +160,7 @@ teardown() {
     rm "$BATS_TEST_TMPDIR/source/file.txt"
     wait_for_debounce
 
-    diff -u <(echo "$expected_output") "$BATS_TEST_TMPDIR/out.txt"
+    diff -u <(echo "$expected_output") <(bolthole_log)
 }
 
 @test "renamed file" {
@@ -173,7 +174,7 @@ teardown() {
     mv "$BATS_TEST_TMPDIR/source/file.txt" "$BATS_TEST_TMPDIR/source/new.txt"
     wait_for_debounce
 
-    diff -u <(echo "$expected_output") "$BATS_TEST_TMPDIR/out.txt"
+    diff -u <(echo "$expected_output") <(bolthole_log)
 }
 
 @test "renamed file and event" {
@@ -188,7 +189,7 @@ teardown() {
     mv "$BATS_TEST_TMPDIR/source/file.txt" "$BATS_TEST_TMPDIR/source/new.txt"
     wait_for_debounce
 
-    diff -u <(echo "$expected_output") "$BATS_TEST_TMPDIR/out.txt"
+    diff -u <(echo "$expected_output") <(bolthole_log)
 }
 
 @test "renamed file dry run" {
@@ -205,7 +206,7 @@ teardown() {
     mv "$BATS_TEST_TMPDIR/source/file.txt" "$BATS_TEST_TMPDIR/source/new.txt"
     wait_for_debounce
 
-    diff -u <(echo "$expected_output") "$BATS_TEST_TMPDIR/out.txt"
+    diff -u <(echo "$expected_output") <(bolthole_log)
 }
 
 @test "initial sync verbose" {
@@ -218,7 +219,7 @@ teardown() {
 
     start_bolthole -v "$BATS_TEST_TMPDIR/source" "$BATS_TEST_TMPDIR/dest"
 
-    diff -u <(echo "$expected_output") "$BATS_TEST_TMPDIR/out.txt"
+    diff -u <(echo "$expected_output") <(bolthole_log)
 }
 
 @test "initial sync" {
@@ -231,7 +232,7 @@ teardown() {
 
     start_bolthole "$BATS_TEST_TMPDIR/source" "$BATS_TEST_TMPDIR/dest"
 
-    diff -u <(echo "$expected_output") "$BATS_TEST_TMPDIR/out.txt"
+    diff -u <(echo "$expected_output") <(bolthole_log)
 }
 
 @test "initial sync dry run" {
@@ -247,7 +248,7 @@ teardown() {
 
     start_bolthole -n "$BATS_TEST_TMPDIR/source" "$BATS_TEST_TMPDIR/dest"
 
-    diff -u <(echo "$expected_output") "$BATS_TEST_TMPDIR/out.txt"
+    diff -u <(echo "$expected_output") <(bolthole_log)
     [ ! -e "$BATS_TEST_TMPDIR/dest/new.txt" ]
 }
 
@@ -264,7 +265,7 @@ teardown() {
 
     start_bolthole -n "$BATS_TEST_TMPDIR/source" "$BATS_TEST_TMPDIR/dest"
 
-    diff -u <(echo "$expected_output") "$BATS_TEST_TMPDIR/out.txt"
+    diff -u <(echo "$expected_output") <(bolthole_log)
     [ -f "$BATS_TEST_TMPDIR/dest/extra.txt" ]
 }
 
@@ -277,7 +278,7 @@ teardown() {
     create_file "source/new.txt" "new"
     wait_for_debounce
 
-    [ ! -s "$BATS_TEST_TMPDIR/out.txt" ]
+    [ -z "$(bolthole_log)" ]
 }
 
 @test "single-directory mode verbose" {
@@ -294,7 +295,7 @@ teardown() {
     create_file "source/new.txt" "new"
     wait_for_debounce
 
-    diff -u <(echo "$expected_output") "$BATS_TEST_TMPDIR/out.txt"
+    diff -u <(echo "$expected_output") <(bolthole_log)
 }
 
 @test "dry run shows git commands" {
@@ -311,7 +312,7 @@ teardown() {
     create_file "source/new.txt" "new"
     wait_for_debounce
 
-    diff -u <(echo "$expected_output") "$BATS_TEST_TMPDIR/out.txt"
+    diff -u <(echo "$expected_output") <(bolthole_log)
     ! git -C "$BATS_TEST_TMPDIR/dest" log -1 2>/dev/null
 }
 
@@ -330,6 +331,6 @@ teardown() {
     start_bolthole --show-git "$BATS_TEST_TMPDIR/source"
     sleep 0.2
 
-    diff -u <(echo "$expected_output") "$BATS_TEST_TMPDIR/out.txt"
+    diff -u <(echo "$expected_output") <(bolthole_log)
 }
 

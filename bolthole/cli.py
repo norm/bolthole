@@ -101,4 +101,6 @@ def main():
         watchdog_debug=args.watchdog_debug,
         ignore_patterns=args.ignore,
         show_git=args.show_git,
+        source_label=args.source,
+        dest_label=args.dest,
     )

@@ -164,7 +164,7 @@ class DebouncingEventHandler(FileSystemEventHandler):
         base_path: Path,
         ignore_patterns: list[str],
         dest_path: Path | None = None,
-        debounce_delay: float = 0.33,
+        debounce_delay: float = 0.1,
         dry_run: bool = False,
         verbose: bool = False,
         timeless: bool = False,
@@ -319,6 +319,8 @@ def watch(
     watchdog_debug: bool = False,
     ignore_patterns: list[str] | None = None,
     show_git: bool = False,
+    source_label: str | None = None,
+    dest_label: str | None = None,
 ):
     if ignore_patterns is None:
         ignore_patterns = []
@@ -360,6 +362,12 @@ def watch(
     signal.signal(signal.SIGTERM, sigterm_handler)
 
     observer.start()
+
+    if dest_label:
+        print(f"   Copying {source_label} to {dest_label}...", flush=True)
+    else:
+        print(f"   Watching {source_label}...", flush=True)
+
     try:
         while True:
             observer.join(timeout=1)

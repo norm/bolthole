@@ -21,7 +21,7 @@ teardown() {
     rm "$BATS_TEST_TMPDIR/watch/temp.txt"
     wait_for_debounce
 
-    output=$(cat "$BATS_TEST_TMPDIR/out.txt")
+    output=$(bolthole_log)
     diff -u <(echo -n "$expected_output") <(echo -n "$output")
     [ $? -eq 0 ]
 }
@@ -37,7 +37,7 @@ teardown() {
     echo "content" > "$BATS_TEST_TMPDIR/watch/file.txt"
     wait_for_debounce
 
-    output=$(cat "$BATS_TEST_TMPDIR/out.txt")
+    output=$(bolthole_log)
     diff -u <(echo "$expected_output") <(echo "$output")
     [ $? -eq 0 ]
 }

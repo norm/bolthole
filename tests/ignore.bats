@@ -22,7 +22,7 @@ teardown() {
 
     start_bolthole --ignore "*.log" --ignore "*.tmp" "$BATS_TEST_TMPDIR/source" "$BATS_TEST_TMPDIR/dest"
 
-    diff -u <(echo "$expected_output") "$BATS_TEST_TMPDIR/out.txt"
+    diff -u <(echo "$expected_output") <(bolthole_log)
     [ -f "$BATS_TEST_TMPDIR/dest/keep.txt" ]
     [ ! -e "$BATS_TEST_TMPDIR/dest/ignore.log" ]
     [ ! -e "$BATS_TEST_TMPDIR/dest/ignore.tmp" ]
@@ -39,7 +39,7 @@ teardown() {
 
     start_bolthole --ignore ".hidden" "$BATS_TEST_TMPDIR/source" "$BATS_TEST_TMPDIR/dest"
 
-    diff -u <(echo "$expected_output") "$BATS_TEST_TMPDIR/out.txt"
+    diff -u <(echo "$expected_output") <(bolthole_log)
     [ -f "$BATS_TEST_TMPDIR/dest/keep.txt" ]
     [ ! -e "$BATS_TEST_TMPDIR/dest/.hidden" ]
 }
@@ -56,7 +56,7 @@ teardown() {
 
     start_bolthole --ignore "*.log" "$BATS_TEST_TMPDIR/source" "$BATS_TEST_TMPDIR/dest"
 
-    diff -u <(echo "$expected_output") "$BATS_TEST_TMPDIR/out.txt"
+    diff -u <(echo "$expected_output") <(bolthole_log)
     [ -f "$BATS_TEST_TMPDIR/dest/keep.txt" ]
     [ -f "$BATS_TEST_TMPDIR/dest/existing.log" ]
 }
@@ -72,7 +72,7 @@ teardown() {
     echo "ignored" > "$BATS_TEST_TMPDIR/source/new.log"
     wait_for_debounce
 
-    diff -u <(echo -n "$expected_output") "$BATS_TEST_TMPDIR/out.txt"
+    diff -u <(echo -n "$expected_output") <(bolthole_log)
     [ ! -e "$BATS_TEST_TMPDIR/dest/new.log" ]
 }
 
@@ -88,7 +88,7 @@ teardown() {
     echo "modified" > "$BATS_TEST_TMPDIR/source/ignored.log"
     wait_for_debounce
 
-    diff -u <(echo -n "$expected_output") "$BATS_TEST_TMPDIR/out.txt"
+    diff -u <(echo -n "$expected_output") <(bolthole_log)
     [ ! -e "$BATS_TEST_TMPDIR/dest/ignored.log" ]
 }
 
@@ -107,7 +107,7 @@ teardown() {
     mv "$BATS_TEST_TMPDIR/source/visible.txt" "$BATS_TEST_TMPDIR/source/visible.log"
     wait_for_debounce
 
-    diff -u <(echo "$expected_output") "$BATS_TEST_TMPDIR/out.txt"
+    diff -u <(echo "$expected_output") <(bolthole_log)
     [ ! -e "$BATS_TEST_TMPDIR/dest/visible.txt" ]
     [ ! -e "$BATS_TEST_TMPDIR/dest/visible.log" ]
 }
@@ -127,7 +127,7 @@ teardown() {
     mv "$BATS_TEST_TMPDIR/source/hidden.log" "$BATS_TEST_TMPDIR/source/visible.txt"
     wait_for_debounce
 
-    diff -u <(echo "$expected_output") "$BATS_TEST_TMPDIR/out.txt"
+    diff -u <(echo "$expected_output") <(bolthole_log)
     [ -f "$BATS_TEST_TMPDIR/dest/visible.txt" ]
 }
 
@@ -143,7 +143,7 @@ teardown() {
     rm "$BATS_TEST_TMPDIR/source/ignored.log"
     wait_for_debounce
 
-    diff -u <(echo -n "$expected_output") "$BATS_TEST_TMPDIR/out.txt"
+    diff -u <(echo -n "$expected_output") <(bolthole_log)
 }
 
 @test ".git ignored by default" {
@@ -158,7 +158,7 @@ teardown() {
 
     start_bolthole "$BATS_TEST_TMPDIR/source" "$BATS_TEST_TMPDIR/dest"
 
-    diff -u <(echo "$expected_output") "$BATS_TEST_TMPDIR/out.txt"
+    diff -u <(echo "$expected_output") <(bolthole_log)
     [ -f "$BATS_TEST_TMPDIR/dest/file.txt" ]
     [ ! -e "$BATS_TEST_TMPDIR/dest/.git/custom" ]
 }
@@ -174,7 +174,7 @@ teardown() {
 
     start_bolthole --ignore "*.log" "$BATS_TEST_TMPDIR/source" "$BATS_TEST_TMPDIR/dest"
 
-    diff -u <(echo "$expected_output") "$BATS_TEST_TMPDIR/out.txt"
+    diff -u <(echo "$expected_output") <(bolthole_log)
     [ -f "$BATS_TEST_TMPDIR/dest/subdir/keep.txt" ]
     [ ! -e "$BATS_TEST_TMPDIR/dest/subdir/ignore.log" ]
 }
@@ -190,7 +190,7 @@ teardown() {
 
     start_bolthole --ignore ".hidden" "$BATS_TEST_TMPDIR/source" "$BATS_TEST_TMPDIR/dest"
 
-    diff -u <(echo "$expected_output") "$BATS_TEST_TMPDIR/out.txt"
+    diff -u <(echo "$expected_output") <(bolthole_log)
     [ -f "$BATS_TEST_TMPDIR/dest/subdir/keep.txt" ]
     [ ! -e "$BATS_TEST_TMPDIR/dest/subdir/.hidden" ]
 }
@@ -211,7 +211,7 @@ teardown() {
     mv "$BATS_TEST_TMPDIR/source/visible.txt" "$BATS_TEST_TMPDIR/source/.hidden/visible.txt"
     wait_for_debounce
 
-    diff -u <(echo "$expected_output") "$BATS_TEST_TMPDIR/out.txt"
+    diff -u <(echo "$expected_output") <(bolthole_log)
     [ ! -e "$BATS_TEST_TMPDIR/dest/visible.txt" ]
     [ ! -e "$BATS_TEST_TMPDIR/dest/.hidden" ]
 }
@@ -231,7 +231,7 @@ teardown() {
     mv "$BATS_TEST_TMPDIR/source/.hidden/hidden.txt" "$BATS_TEST_TMPDIR/source/visible.txt"
     wait_for_debounce
 
-    diff -u <(echo "$expected_output") "$BATS_TEST_TMPDIR/out.txt"
+    diff -u <(echo "$expected_output") <(bolthole_log)
     [ -f "$BATS_TEST_TMPDIR/dest/visible.txt" ]
 }
 
@@ -246,7 +246,7 @@ teardown() {
 
     start_bolthole --ignore "*.log" "$BATS_TEST_TMPDIR/source" "$BATS_TEST_TMPDIR/dest"
 
-    diff -u <(echo "$expected_output") "$BATS_TEST_TMPDIR/out.txt"
+    diff -u <(echo "$expected_output") <(bolthole_log)
     [ -f "$BATS_TEST_TMPDIR/dest/keep file.txt" ]
     [ ! -e "$BATS_TEST_TMPDIR/dest/ignore file.log" ]
 }
@@ -262,7 +262,7 @@ teardown() {
 
     start_bolthole --ignore "secret.txt" "$BATS_TEST_TMPDIR/source" "$BATS_TEST_TMPDIR/dest"
 
-    diff -u <(echo "$expected_output") "$BATS_TEST_TMPDIR/out.txt"
+    diff -u <(echo "$expected_output") <(bolthole_log)
     [ -f "$BATS_TEST_TMPDIR/dest/keep.txt" ]
     [ ! -e "$BATS_TEST_TMPDIR/dest/secret.txt" ]
 }
@@ -278,7 +278,7 @@ teardown() {
 
     start_bolthole --ignore "*.tmp" "$BATS_TEST_TMPDIR/source" "$BATS_TEST_TMPDIR/dest"
 
-    diff -u <(echo "$expected_output") "$BATS_TEST_TMPDIR/out.txt"
+    diff -u <(echo "$expected_output") <(bolthole_log)
     [ -f "$BATS_TEST_TMPDIR/dest/keep.txt" ]
     [ ! -e "$BATS_TEST_TMPDIR/dest/logs.tmp" ]
 }
@@ -295,7 +295,7 @@ teardown() {
     echo "secret" > "$BATS_TEST_TMPDIR/source/.hidden/secret.txt"
     wait_for_debounce
 
-    diff -u <(echo -n "$expected_output") "$BATS_TEST_TMPDIR/out.txt"
+    diff -u <(echo -n "$expected_output") <(bolthole_log)
     [ ! -e "$BATS_TEST_TMPDIR/dest/.hidden" ]
 }
 
@@ -312,7 +312,7 @@ teardown() {
 
     start_bolthole --ignore "logs/*.log" "$BATS_TEST_TMPDIR/source" "$BATS_TEST_TMPDIR/dest"
 
-    diff -u <(echo "$expected_output") <(sort "$BATS_TEST_TMPDIR/out.txt")
+    diff -u <(echo "$expected_output") <(sort <(bolthole_log))
     [ -f "$BATS_TEST_TMPDIR/dest/keep.txt" ]
     [ -f "$BATS_TEST_TMPDIR/dest/other/file.log" ]
     [ ! -e "$BATS_TEST_TMPDIR/dest/logs" ]
@@ -429,7 +429,7 @@ teardown() {
     echo "modified" > "$BATS_TEST_TMPDIR/source/ignored.log"
     wait_for_debounce
 
-    diff -u <(echo "$expected_output") "$BATS_TEST_TMPDIR/out.txt"
+    diff -u <(echo "$expected_output") <(bolthole_log)
     [ "$(cat "$BATS_TEST_TMPDIR/dest/tracked.txt")" = "modified" ]
     [ ! -e "$BATS_TEST_TMPDIR/dest/ignored.log" ]
     run git -C "$BATS_TEST_TMPDIR/dest" show --name-only --format=""
@@ -452,7 +452,7 @@ teardown() {
     echo "modified" > "$BATS_TEST_TMPDIR/source/ignored.log"
     wait_for_debounce
 
-    diff -u <(echo "$expected_output") "$BATS_TEST_TMPDIR/out.txt"
+    diff -u <(echo "$expected_output") <(bolthole_log)
     check_commit_message "$BATS_TEST_TMPDIR/source" "Update tracked.txt"
     run git -C "$BATS_TEST_TMPDIR/source" show --name-only --format=""
     [ "$output" = "tracked.txt" ]
