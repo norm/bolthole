@@ -314,3 +314,22 @@ teardown() {
     diff -u <(echo "$expected_output") "$BATS_TEST_TMPDIR/out.txt"
     ! git -C "$BATS_TEST_TMPDIR/dest" log -1 2>/dev/null
 }
+
+@test "display selective git commands" {
+    expected_output=$(sed -e 's/^        //' <<-EOF
+        %  git add -A
+        %  git commit
+	EOF
+    )
+
+    git -C "$BATS_TEST_TMPDIR/source" init --quiet
+    add_file_to_repo "source/file.txt" "content"
+
+    create_file "source/new.txt" "new"
+
+    start_bolthole --show-git "$BATS_TEST_TMPDIR/source"
+    sleep 0.2
+
+    diff -u <(echo "$expected_output") "$BATS_TEST_TMPDIR/out.txt"
+}
+

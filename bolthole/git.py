@@ -1,3 +1,4 @@
+import shlex
 import subprocess
 from pathlib import Path
 
@@ -7,9 +8,10 @@ from bolthole.debounce import Event
 class GitRepo:
     SUBJECT_LINE_LIMIT = 50
 
-    def __init__(self, path, dry_run=False):
+    def __init__(self, path, dry_run=False, show_git=False):
         self.path = Path(path)
         self.dry_run = dry_run
+        self.show_git = show_git
 
     EXCLUDE_FLAGS = {
         "--no-verify",
@@ -20,24 +22,43 @@ class GitRepo:
         "-m",
         "-C",
     }
+    EXCLUDE_COMMANDS = {
+        "diff",
+        "status",
+    }
 
     def run_git(self, *args, **kwargs):
+        command = args[0] if args else None
+        display_parts = ["git"]
+        skip_next = False
+        for arg in args:
+            if skip_next:
+                skip_next = False
+                continue
+            if arg in self.EXCLUDE_FLAGS:
+                continue
+            if arg in self.EXCLUDE_OPTIONS:
+                skip_next = True
+                continue
+            display_parts.append(arg)
+
+        formatted = " ".join(shlex.quote(arg) for arg in display_parts)
+
         if self.dry_run:
-            parts = []
-            skip_next = False
-            for arg in args:
-                if skip_next:
-                    skip_next = False
-                    continue
-                if arg in self.EXCLUDE_FLAGS:
-                    continue
-                if arg in self.EXCLUDE_OPTIONS:
-                    skip_next = True
-                    continue
-                parts.append(arg)
-            print(f"#  git {' '.join(parts)}", flush=True)
+            print(f"#  {formatted}", flush=True)
             return subprocess.CompletedProcess(args=[], returncode=0)
-        return subprocess.run(["git", "-C", str(self.path), *args], **kwargs)
+
+        show_this = self.show_git and command not in self.EXCLUDE_COMMANDS
+        if show_this:
+            print(f"%  {formatted}", flush=True)
+
+        result = subprocess.run(["git", "-C", str(self.path), *args], **kwargs)
+
+        if show_this and result.stdout:
+            for line in result.stdout.splitlines():
+                print(f">  {line}", flush=True)
+
+        return result
 
     @staticmethod
     def is_repo(path):
@@ -53,18 +74,6 @@ class GitRepo:
     def add_all(self):
         self.run_git("add", "-A", check=True)
 
-    def has_staged_changes(self):
-        result = self.run_git("diff", "--cached", "--quiet", capture_output=True)
-        return result.returncode != 0
-
-    def commit(self, message):
-        if not self.dry_run and not self.has_staged_changes():
-            return
-        self.run_git(
-            "commit", "-m", message, "--no-verify", "--no-gpg-sign", "--quiet",
-            check=True,
-        )
-
     def get_uncommitted(self):
         result = self.run_git(
             "status", "--porcelain",
@@ -72,8 +81,6 @@ class GitRepo:
         )
         events = []
         for line in result.stdout.splitlines():
-            if not line:
-                continue
             status = line[:2]
             path = line[3:]
             if status == "??":
@@ -91,8 +98,6 @@ class GitRepo:
         )
         events = []
         for line in result.stdout.splitlines():
-            if not line:
-                continue
             parts = line.split("\t")
             status = parts[0]
             path = parts[1]
@@ -118,7 +123,14 @@ class GitRepo:
             if not staged:
                 return
             message = self.generate_commit_message(staged)
-        self.commit(message)
+        self.run_git(
+            "commit",
+            "-m", message,
+            "--no-verify",
+            "--no-gpg-sign",
+            "--quiet",
+            check=True,
+        )
 
     @staticmethod
     def generate_commit_message(events):

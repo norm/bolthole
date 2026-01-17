@@ -43,6 +43,11 @@ def main():
         metavar="PATTERN",
         help="ignore files matching pattern (repeatable)",
     )
+    parser.add_argument(
+        "--show-git",
+        action="store_true",
+        help="display git commands and their output",
+    )
     parser.add_argument("source")
     parser.add_argument("dest", nargs="?")
     args = parser.parse_args()
@@ -95,4 +100,5 @@ def main():
         timeless=args.timeless,
         watchdog_debug=args.watchdog_debug,
         ignore_patterns=args.ignore,
+        show_git=args.show_git,
     )

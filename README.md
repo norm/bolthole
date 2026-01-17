@@ -14,7 +14,6 @@ one commit, not many.
 
 ## Outstanding
 
-- [ ] show git commands being executed
 - [ ] override commit author
 - [ ] override commit message
 - [ ] commit and exit without watching
