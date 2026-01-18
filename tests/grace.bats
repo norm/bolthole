@@ -113,3 +113,120 @@ teardown() {
     run git -C "$BATS_TEST_TMPDIR/dest" log --format=%s
     diff -u <(echo "$expected") <(echo "$output")
 }
+
+@test "files older than bundle threshold commit together" {
+    create_file "source/existing.txt" "existing"
+    start_bolthole --grace 1.0 --bundle 0.5 "$BATS_TEST_TMPDIR/source" "$BATS_TEST_TMPDIR/dest"
+
+    create_file "source/a.txt" "first"
+    create_file "source/b.txt" "second"
+    wait_for_debounce
+
+    [ -f "$BATS_TEST_TMPDIR/dest/a.txt" ]
+    [ -f "$BATS_TEST_TMPDIR/dest/b.txt" ]
+    run git -C "$BATS_TEST_TMPDIR/dest" log --format=%s
+    diff -u <(echo "Add existing.txt") <(echo "$output")
+
+    sleep 1.1
+
+    expected=$(sed -e 's/^        //' <<-EOF
+        Add a.txt and b.txt
+        Add existing.txt
+	EOF
+    )
+    run git -C "$BATS_TEST_TMPDIR/dest" log --format=%s
+    diff -u <(echo "$expected") <(echo "$output")
+}
+
+@test "file younger than bundle threshold waits for own timer" {
+    create_file "source/existing.txt" "existing"
+    start_bolthole --grace 1.0 --bundle 0.8 "$BATS_TEST_TMPDIR/source" "$BATS_TEST_TMPDIR/dest"
+
+    create_file "source/a.txt" "first"
+    wait_for_debounce
+
+    # create before first grace timer fires
+    sleep 0.6
+    create_file "source/b.txt" "second"
+    wait_for_debounce
+
+    # first grace timer has now fired
+    sleep 0.5
+
+    expected_after_a=$(sed -e 's/^        //' <<-EOF
+        Add a.txt
+        Add existing.txt
+	EOF
+    )
+    run git -C "$BATS_TEST_TMPDIR/dest" log --format=%s
+    diff -u <(echo "$expected_after_a") <(echo "$output")
+
+    sleep 0.6
+
+    expected_after_b=$(sed -e 's/^        //' <<-EOF
+        Add b.txt
+        Add a.txt
+        Add existing.txt
+	EOF
+    )
+    run git -C "$BATS_TEST_TMPDIR/dest" log --format=%s
+    diff -u <(echo "$expected_after_b") <(echo "$output")
+}
+
+@test "bundled commits work in single-directory mode" {
+    create_file "source/existing.txt" "existing"
+    init_source_repo
+    start_bolthole --grace 1.0 --bundle 0.5 "$BATS_TEST_TMPDIR/source"
+
+    create_file "source/a.txt" "first"
+    create_file "source/b.txt" "second"
+    wait_for_debounce
+
+    run git -C "$BATS_TEST_TMPDIR/source" log --format=%s
+    diff -u <(echo "initial") <(echo "$output")
+
+    sleep 1.1
+
+    expected=$(sed -e 's/^        //' <<-EOF
+        Add a.txt and b.txt
+        initial
+	EOF
+    )
+    run git -C "$BATS_TEST_TMPDIR/source" log --format=%s
+    diff -u <(echo "$expected") <(echo "$output")
+}
+
+@test "dry-run shows multiple files in bundled commit" {
+    create_file "source/existing.txt" "existing"
+    create_file "dest/existing.txt" "existing"
+    init_dest_repo
+    start_bolthole --dry-run --grace 1.0 --bundle 0.5 "$BATS_TEST_TMPDIR/source" "$BATS_TEST_TMPDIR/dest"
+
+    create_file "source/a.txt" "first"
+    create_file "source/b.txt" "second"
+    wait_for_debounce
+
+    # grace timer has not fired
+    sleep 0.5
+    expected_before=$(sed -e 's/^        //' <<-EOF
+        ++ "a.txt"
+        #  copy "a.txt"
+        ++ "b.txt"
+        #  copy "b.txt"
+	EOF
+    )
+    diff -u <(echo "$expected_before") <(bolthole_log)
+
+    # grace timer has fired
+    sleep 0.6
+    expected_after=$(sed -e 's/^        //' <<-EOF
+        ++ "a.txt"
+        #  copy "a.txt"
+        ++ "b.txt"
+        #  copy "b.txt"
+        #  git add -- a.txt b.txt
+        #  git commit
+	EOF
+    )
+    diff -u <(echo "$expected_after") <(bolthole_log)
+}

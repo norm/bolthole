@@ -60,6 +60,14 @@ def main():
         help="override commit author (format: 'Name <email>')",
     )
     parser.add_argument(
+        "-b",
+        "--bundle",
+        type=float,
+        default=0,
+        metavar="SECONDS",
+        help="bundle files older than threshold into single commit",
+    )
+    parser.add_argument(
         "-g",
         "--grace",
         type=float,
@@ -89,6 +97,18 @@ def main():
 
     if args.grace < 0:
         print("error: grace period cannot be negative", file=sys.stderr)
+        sys.exit(2)
+
+    if args.bundle < 0:
+        print("error: bundle threshold cannot be negative", file=sys.stderr)
+        sys.exit(2)
+
+    if args.bundle > 0 and args.grace == 0:
+        print("error: bundle requires grace period", file=sys.stderr)
+        sys.exit(2)
+
+    if args.grace and args.bundle >= args.grace:
+        print("error: bundle threshold must be less than grace period", file=sys.stderr)
         sys.exit(2)
 
     source = Path(args.source).resolve()
@@ -158,4 +178,5 @@ def main():
         message=args.message,
         remotes=args.remote,
         grace=args.grace,
+        bundle=args.bundle,
     )

@@ -5,6 +5,7 @@ import shutil
 import signal
 import stat
 import threading
+import time
 from pathlib import Path
 from types import FrameType
 
@@ -179,6 +180,7 @@ class DebouncingEventHandler(FileSystemEventHandler):
         message: str | None = None,
         remotes: list[str] = [],
         grace: float = 0,
+        bundle: float = 0,
     ):
         super().__init__()
         self.base_path = base_path
@@ -193,12 +195,14 @@ class DebouncingEventHandler(FileSystemEventHandler):
         self.remotes = remotes
         self.ignore_patterns = ignore_patterns
         self.grace = grace
+        self.bundle = bundle
         self.pending_events: list[Event] = []
         self.lock = threading.Lock()
         self.timer: threading.Timer | None = None
         self.known_files = list_files(self.base_path, self.ignore_patterns)
         self.grace_events: dict[str, Event] = {}
         self.grace_timers: dict[str, threading.Timer] = {}
+        self.grace_timestamps: dict[str, float] = {}
         self.commit_lock = threading.Lock()
 
     def relative_path(
@@ -275,6 +279,7 @@ class DebouncingEventHandler(FileSystemEventHandler):
         self,
         events: list[Event],
     ):
+        now = time.time()
         with self.lock:
             for event in events:
                 if event.type == "renamed":
@@ -284,10 +289,13 @@ class DebouncingEventHandler(FileSystemEventHandler):
                     path = event.path
                     old_path = None
 
+                timestamp = now
+
                 if old_path and old_path in self.grace_timers:
                     self.grace_timers[old_path].cancel()
                     del self.grace_timers[old_path]
                     old_event = self.grace_events.pop(old_path, None)
+                    timestamp = self.grace_timestamps.pop(old_path, now)
                     if old_event and old_event.type == "created":
                         # create + rename = create with new name
                         event = Event("created", path)
@@ -295,11 +303,13 @@ class DebouncingEventHandler(FileSystemEventHandler):
                 if path in self.grace_timers:
                     self.grace_timers[path].cancel()
                     del self.grace_timers[path]
+                    timestamp = self.grace_timestamps.get(path, now)
                     old_event = self.grace_events.get(path)
                     if old_event:
                         if old_event.type == "created" and event.type == "deleted":
                             # create + delete = nothing
                             del self.grace_events[path]
+                            del self.grace_timestamps[path]
                             continue
                         elif old_event.type == "created":
                             # create + anything else = still created
@@ -309,6 +319,7 @@ class DebouncingEventHandler(FileSystemEventHandler):
                             event = Event("modified", path)
 
                 self.grace_events[path] = event
+                self.grace_timestamps[path] = timestamp
                 timer = threading.Timer(
                     self.grace,
                     self.commit_after_grace,
@@ -321,11 +332,16 @@ class DebouncingEventHandler(FileSystemEventHandler):
         self,
         path: str,
     ):
+        if self.bundle > 0:
+            self.commit_bundled_files()
+            return
+
         with self.lock:
             if path not in self.grace_events:
                 return
             event = self.grace_events.pop(path)
             del self.grace_timers[path]
+            del self.grace_timestamps[path]
 
         with self.commit_lock:
             if self.dest_path:
@@ -340,6 +356,42 @@ class DebouncingEventHandler(FileSystemEventHandler):
                 message=self.message,
             )
             repo.commit_changes([event])
+            if self.remotes:
+                repo.push(self.remotes)
+
+    def commit_bundled_files(self):
+        now = time.time()
+        with self.lock:
+            events_to_commit = []
+            paths_to_remove = []
+            for path, timestamp in self.grace_timestamps.items():
+                age = now - timestamp
+                if age >= self.bundle:
+                    events_to_commit.append(self.grace_events[path])
+                    paths_to_remove.append(path)
+
+            for path in paths_to_remove:
+                del self.grace_events[path]
+                del self.grace_timestamps[path]
+                if path in self.grace_timers:
+                    del self.grace_timers[path]
+
+        if not events_to_commit:
+            return
+
+        with self.commit_lock:
+            if self.dest_path:
+                repo_path = self.dest_path
+            else:
+                repo_path = self.base_path
+            repo = GitRepo(
+                repo_path,
+                dry_run=self.dry_run,
+                show_git=self.show_git,
+                author=self.author,
+                message=self.message,
+            )
+            repo.commit_changes(events_to_commit)
             if self.remotes:
                 repo.push(self.remotes)
 
@@ -421,6 +473,7 @@ def watch(
     message: str | None = None,
     remotes: list[str] = [],
     grace: float = 0,
+    bundle: float = 0,
 ):
     ignore_patterns = [".git", ".gitignore"] + ignore_patterns
 
@@ -463,6 +516,7 @@ def watch(
         message=message,
         remotes=remotes,
         grace=grace,
+        bundle=bundle,
     )
     observer = Observer()
     observer.schedule(handler, str(source), recursive=True)

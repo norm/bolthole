@@ -12,9 +12,6 @@ There is a grace period to allow multiple edits in a short space of time,
 and multiple files changed within the grace period should be packaged as
 one commit, not many.
 
-## Outstanding
-
-- [ ] bundle multiple file changes into single commits
 
 ## Testing
 
