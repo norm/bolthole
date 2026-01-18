@@ -92,3 +92,31 @@ function check_commit_author {
     actual=$(git -C "$repo" log -1 --format="%an <%ae>")
     diff -u <(echo "$expected") <(echo "$actual")
 }
+
+function create_bare_remote {
+    local name="$1"
+    git init --bare --quiet "$BATS_TEST_TMPDIR/$name.git"
+}
+
+function add_remote {
+    local repo="$1"
+    local name="$2"
+    local url="$BATS_TEST_TMPDIR/$name.git"
+    git -C "$BATS_TEST_TMPDIR/$repo" remote add "$name" "$url"
+}
+
+function get_remote_head {
+    local name="$1"
+    git -C "$BATS_TEST_TMPDIR/$name.git" rev-parse HEAD 2>/dev/null
+}
+
+function advance_remote {
+    local name="$1"
+    local tmp="$BATS_TEST_TMPDIR/tmp_clone"
+    git clone --quiet "$BATS_TEST_TMPDIR/$name.git" "$tmp"
+    echo "conflict" > "$tmp/conflict.txt"
+    git -C "$tmp" add conflict.txt
+    git -C "$tmp" commit -m "advance" --no-verify --no-gpg-sign --quiet
+    git -C "$tmp" push --quiet
+    rm -rf "$tmp"
+}

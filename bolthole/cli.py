@@ -65,6 +65,14 @@ def main():
         metavar="MESSAGE",
         help="override commit message",
     )
+    parser.add_argument(
+        "-r",
+        "--remote",
+        action="append",
+        default=[],
+        metavar="REMOTE",
+        help="push to remote after commit (repeatable)",
+    )
     parser.add_argument("source")
     parser.add_argument("dest", nargs="?")
     args = parser.parse_args()
@@ -111,6 +119,15 @@ def main():
             repo = GitRepo(dest)
             repo.init()
 
+    if args.remote:
+        repo_path = dest if dest else source
+        repo = GitRepo(repo_path)
+        for remote in args.remote:
+            if not repo.has_remote(remote):
+                print(f"remote '{remote}' need to be added",
+                      file=sys.stderr)
+                sys.exit(2)
+
     watch(
         source,
         dest=dest,
@@ -124,4 +141,5 @@ def main():
         once=args.once,
         author=args.author,
         message=args.message,
+        remotes=args.remote,
     )

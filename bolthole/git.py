@@ -94,6 +94,19 @@ class GitRepo:
         )
         return result.returncode == 0
 
+    def has_remote(self, name):
+        result = subprocess.run(
+            ["git", "-C", str(self.path), "remote", "get-url", name],
+            capture_output=True,
+        )
+        return result.returncode == 0
+
+    def push(self, remotes):
+        for remote in remotes:
+            result = self.run_git("push", remote, "HEAD", capture_output=True)
+            if result.returncode != 0:
+                output(f"!! push to {remote} failed")
+
     def init(self):
         self.run_git("init", "--quiet", check=True)
 

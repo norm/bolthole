@@ -118,6 +118,7 @@ def initial_sync(
     show_git: bool = False,
     author: str | None = None,
     message: str | None = None,
+    remotes: list[str] = [],
 ):
     if not dry_run:
         dest.mkdir(parents=True, exist_ok=True)
@@ -145,13 +146,19 @@ def initial_sync(
         author=author,
         message=message,
     )
+    committed = False
     if dry_run:
         if events:
             repo.commit_changes(events)
+            committed = True
     else:
         uncommitted = repo.get_uncommitted()
         if uncommitted:
             repo.commit_changes(uncommitted)
+            committed = True
+
+    if remotes and committed:
+        repo.push(remotes)
 
 
 class DebouncingEventHandler(FileSystemEventHandler):
@@ -167,6 +174,7 @@ class DebouncingEventHandler(FileSystemEventHandler):
         show_git: bool = False,
         author: str | None = None,
         message: str | None = None,
+        remotes: list[str] = [],
     ):
         super().__init__()
         self.base_path = base_path
@@ -178,6 +186,7 @@ class DebouncingEventHandler(FileSystemEventHandler):
         self.show_git = show_git
         self.author = author
         self.message = message
+        self.remotes = remotes
         self.ignore_patterns = ignore_patterns
         self.pending_events: list[Event] = []
         self.lock = threading.Lock()
@@ -235,13 +244,16 @@ class DebouncingEventHandler(FileSystemEventHandler):
 
         if collapsed:
             repo_path = self.dest_path if self.dest_path else self.base_path
-            GitRepo(
+            repo = GitRepo(
                 repo_path,
                 dry_run=self.dry_run,
                 show_git=self.show_git,
                 author=self.author,
                 message=self.message,
-            ).commit_changes(collapsed)
+            )
+            repo.commit_changes(collapsed)
+            if self.remotes:
+                repo.push(self.remotes)
 
     def on_created(
         self,
@@ -319,6 +331,7 @@ def watch(
     once: bool = False,
     author: str | None = None,
     message: str | None = None,
+    remotes: list[str] = [],
 ):
     ignore_patterns = [".git", ".gitignore"] + ignore_patterns
 
@@ -330,6 +343,7 @@ def watch(
             show_git=show_git,
             author=author,
             message=message,
+            remotes=remotes,
         )
     else:
         repo = GitRepo(
@@ -342,6 +356,8 @@ def watch(
         events = repo.get_uncommitted()
         if events:
             repo.commit_changes(events)
+            if remotes:
+                repo.push(remotes)
 
     if once:
         return
@@ -356,6 +372,7 @@ def watch(
         show_git=show_git,
         author=author,
         message=message,
+        remotes=remotes,
     )
     observer = Observer()
     observer.schedule(handler, str(source), recursive=True)

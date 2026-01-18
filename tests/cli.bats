@@ -10,7 +10,7 @@ bats_require_minimum_version 1.7.0
     expected_output=$(sed -e 's/^        //' <<-EOF
         usage: bolthole [-h] [--version] [--watchdog-debug] [-n] [-v] [--timeless]
                         [--ignore PATTERN] [--show-git] [--once] [-a AUTHOR]
-                        [-m MESSAGE]
+                        [-m MESSAGE] [-r REMOTE]
                         source [dest]
 
         positional arguments:
@@ -31,6 +31,8 @@ bats_require_minimum_version 1.7.0
                                 override commit author (format: 'Name <email>')
           -m MESSAGE, --message MESSAGE
                                 override commit message
+          -r REMOTE, --remote REMOTE
+                                push to remote after commit (repeatable)
 	EOF
     )
 
@@ -43,7 +45,7 @@ bats_require_minimum_version 1.7.0
     expected_output=$(sed -e 's/^        //' <<-EOF
         usage: bolthole [-h] [--version] [--watchdog-debug] [-n] [-v] [--timeless]
                         [--ignore PATTERN] [--show-git] [--once] [-a AUTHOR]
-                        [-m MESSAGE]
+                        [-m MESSAGE] [-r REMOTE]
                         source [dest]
         bolthole: error: the following arguments are required: source
 	EOF

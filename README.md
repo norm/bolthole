@@ -14,7 +14,6 @@ one commit, not many.
 
 ## Outstanding
 
-- [ ] push commits to remote
 - [ ] wait before committing to allow more edits
 - [ ] bundle multiple file changes into single commits
 
