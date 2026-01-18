@@ -48,6 +48,11 @@ def main():
         action="store_true",
         help="display git commands and their output",
     )
+    parser.add_argument(
+        "--once",
+        action="store_true",
+        help="commit and exit without watching for changes",
+    )
     parser.add_argument("source")
     parser.add_argument("dest", nargs="?")
     args = parser.parse_args()
@@ -103,4 +108,5 @@ def main():
         show_git=args.show_git,
         source_label=args.source,
         dest_label=args.dest,
+        once=args.once,
     )

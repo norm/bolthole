@@ -16,7 +16,6 @@ one commit, not many.
 
 - [ ] override commit author
 - [ ] override commit message
-- [ ] commit and exit without watching
 - [ ] push commits to remote
 - [ ] wait before committing to allow more edits
 - [ ] bundle multiple file changes into single commits

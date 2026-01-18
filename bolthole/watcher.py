@@ -174,8 +174,8 @@ class DebouncingEventHandler(FileSystemEventHandler):
         show_git: bool = False,
     ):
         super().__init__()
-        self.base_path = base_path.resolve()
-        self.dest_path = dest_path.resolve() if dest_path else None
+        self.base_path = base_path
+        self.dest_path = dest_path
         self.debounce_delay = debounce_delay
         self.dry_run = dry_run
         self.verbose = verbose
@@ -323,6 +323,7 @@ def watch(
     show_git: bool = False,
     source_label: str | None = None,
     dest_label: str | None = None,
+    once: bool = False,
 ):
     if ignore_patterns is None:
         ignore_patterns = []
@@ -341,6 +342,9 @@ def watch(
         events = repo.get_uncommitted()
         if events:
             repo.commit_changes(events)
+
+    if once:
+        return
 
     handler = DebouncingEventHandler(
         source,

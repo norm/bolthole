@@ -26,6 +26,10 @@ class GitRepo:
         "diff",
         "status",
     }
+    READ_ONLY_COMMANDS = {
+        "diff",
+        "status",
+    }
 
     def run_git(self, *args, **kwargs):
         command = args[0] if args else None
@@ -44,7 +48,7 @@ class GitRepo:
 
         formatted = " ".join(shlex.quote(arg) for arg in display_parts)
 
-        if self.dry_run:
+        if self.dry_run and command not in self.READ_ONLY_COMMANDS:
             print(f"#  {formatted}", flush=True)
             return subprocess.CompletedProcess(args=[], returncode=0)
 
