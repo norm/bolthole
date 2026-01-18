@@ -6,6 +6,10 @@ setup() {
     mkdir -p "$BATS_TEST_TMPDIR/source"
 }
 
+teardown() {
+    teardown_bolthole
+}
+
 @test "creating mirror prompts for remote" {
     expected_output=$(sed -e 's/^        //' <<-EOF
         remote 'origin' need to be added
@@ -76,6 +80,24 @@ setup() {
     run timeout 5 bolthole --once --timeless -r origin "$BATS_TEST_TMPDIR/source"
     diff -u <(echo "$expected_output") <(echo "$output")
     [ $status -eq 0 ]
+    check_commit_message "$BATS_TEST_TMPDIR/source" "Add new.txt"
+}
+
+@test "push after commit in watch mode" {
+    create_file "source/file.txt" "content"
+    init_source_repo
+    create_bare_remote "origin"
+    add_remote "source" "origin"
+
+    start_bolthole -r origin "$BATS_TEST_TMPDIR/source"
+
+    create_file "source/new.txt" "new content"
+    wait_for_debounce
+
+    local origin_head source_head
+    origin_head=$(get_remote_head "origin")
+    source_head=$(git -C "$BATS_TEST_TMPDIR/source" rev-parse HEAD)
+    [ "$origin_head" = "$source_head" ]
     check_commit_message "$BATS_TEST_TMPDIR/source" "Add new.txt"
 }
 

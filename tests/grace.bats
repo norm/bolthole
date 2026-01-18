@@ -83,6 +83,82 @@ teardown() {
     diff -u <(echo "Add existing.txt") <(echo "$output")
 }
 
+@test "delete then recreate identical within grace results in no commit" {
+    create_file "source/existing.txt" "existing"
+    create_file "source/stable.txt" "unchanged"
+
+    start_bolthole --grace 0.5 "$BATS_TEST_TMPDIR/source" "$BATS_TEST_TMPDIR/dest"
+
+    rm "$BATS_TEST_TMPDIR/source/stable.txt"
+    wait_for_debounce
+    [ ! -f "$BATS_TEST_TMPDIR/dest/stable.txt" ]
+
+    create_file "source/stable.txt" "unchanged"
+    wait_for_debounce
+    [ -f "$BATS_TEST_TMPDIR/dest/stable.txt" ]
+
+    # wait for grace period to expire
+    sleep 0.6
+
+    # no new commits (content unchanged)
+    run git -C "$BATS_TEST_TMPDIR/dest" log --format=%s
+    diff -u <(echo "Add existing.txt and stable.txt") <(echo "$output")
+}
+
+@test "modify then delete within grace results in one delete commit" {
+    create_file "source/existing.txt" "existing"
+    create_file "source/doomed.txt" "original"
+
+    start_bolthole --grace 0.5 "$BATS_TEST_TMPDIR/source" "$BATS_TEST_TMPDIR/dest"
+
+    echo "modified" > "$BATS_TEST_TMPDIR/source/doomed.txt"
+    wait_for_debounce
+    [ "$(cat "$BATS_TEST_TMPDIR/dest/doomed.txt")" = "modified" ]
+
+    rm "$BATS_TEST_TMPDIR/source/doomed.txt"
+    wait_for_debounce
+    [ ! -f "$BATS_TEST_TMPDIR/dest/doomed.txt" ]
+
+    # wait for grace period to expire
+    sleep 0.6
+
+    # one commit for the deletion (not modify then delete)
+    expected=$(sed -e 's/^        //' <<-EOF
+        Remove doomed.txt
+        Add doomed.txt and existing.txt
+	EOF
+    )
+    run git -C "$BATS_TEST_TMPDIR/dest" log --format=%s
+    diff -u <(echo "$expected") <(echo "$output")
+}
+
+@test "delete then recreate modified within grace results in one commit" {
+    create_file "source/existing.txt" "existing"
+    create_file "source/changing.txt" "original"
+
+    start_bolthole --grace 0.5 "$BATS_TEST_TMPDIR/source" "$BATS_TEST_TMPDIR/dest"
+
+    rm "$BATS_TEST_TMPDIR/source/changing.txt"
+    wait_for_debounce
+    [ ! -f "$BATS_TEST_TMPDIR/dest/changing.txt" ]
+
+    create_file "source/changing.txt" "modified"
+    wait_for_debounce
+    [ -f "$BATS_TEST_TMPDIR/dest/changing.txt" ]
+
+    # wait for grace period to expire
+    sleep 0.6
+
+    # one commit for the modification
+    expected=$(sed -e 's/^        //' <<-EOF
+        Update changing.txt
+        Add changing.txt and existing.txt
+	EOF
+    )
+    run git -C "$BATS_TEST_TMPDIR/dest" log --format=%s
+    diff -u <(echo "$expected") <(echo "$output")
+}
+
 @test "create then rename within grace results in one commit" {
     create_file "source/existing.txt" "existing"
 
