@@ -10,7 +10,7 @@ bats_require_minimum_version 1.7.0
     expected_output=$(sed -e 's/^        //' <<-EOF
         usage: bolthole [-h] [--version] [--watchdog-debug] [-n] [-v] [--timeless]
                         [--ignore PATTERN] [--show-git] [--once] [-a AUTHOR]
-                        [-m MESSAGE] [-r REMOTE]
+                        [-g SECONDS] [-m MESSAGE] [-r REMOTE]
                         source [dest]
 
         positional arguments:
@@ -29,6 +29,8 @@ bats_require_minimum_version 1.7.0
           --once                commit and exit without watching for changes
           -a AUTHOR, --author AUTHOR
                                 override commit author (format: 'Name <email>')
+          -g SECONDS, --grace SECONDS
+                                delay commits by grace period (default: 0)
           -m MESSAGE, --message MESSAGE
                                 override commit message
           -r REMOTE, --remote REMOTE
@@ -45,7 +47,7 @@ bats_require_minimum_version 1.7.0
     expected_output=$(sed -e 's/^        //' <<-EOF
         usage: bolthole [-h] [--version] [--watchdog-debug] [-n] [-v] [--timeless]
                         [--ignore PATTERN] [--show-git] [--once] [-a AUTHOR]
-                        [-m MESSAGE] [-r REMOTE]
+                        [-g SECONDS] [-m MESSAGE] [-r REMOTE]
                         source [dest]
         bolthole: error: the following arguments are required: source
 	EOF
@@ -102,6 +104,19 @@ bats_require_minimum_version 1.7.0
     mkdir -p "$BATS_TEST_TMPDIR/source/dest"
 
     run bolthole "$BATS_TEST_TMPDIR/source" "$BATS_TEST_TMPDIR/source/dest"
+    diff -u <(echo "$expected_output") <(echo "$output")
+    [ $status -eq 2 ]
+}
+
+@test "rejects negative grace period" {
+    expected_output=$(sed -e 's/^        //' <<-EOF
+        error: grace period cannot be negative
+	EOF
+    )
+
+    mkdir -p "$BATS_TEST_TMPDIR/source"
+
+    run bolthole --grace -1 "$BATS_TEST_TMPDIR/source"
     diff -u <(echo "$expected_output") <(echo "$output")
     [ $status -eq 2 ]
 }

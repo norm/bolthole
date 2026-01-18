@@ -175,6 +175,7 @@ class DebouncingEventHandler(FileSystemEventHandler):
         author: str | None = None,
         message: str | None = None,
         remotes: list[str] = [],
+        grace: float = 0,
     ):
         super().__init__()
         self.base_path = base_path
@@ -188,10 +189,14 @@ class DebouncingEventHandler(FileSystemEventHandler):
         self.message = message
         self.remotes = remotes
         self.ignore_patterns = ignore_patterns
+        self.grace = grace
         self.pending_events: list[Event] = []
         self.lock = threading.Lock()
         self.timer: threading.Timer | None = None
         self.known_files = list_files(self.base_path, self.ignore_patterns)
+        self.grace_events: dict[str, Event] = {}
+        self.grace_timers: dict[str, threading.Timer] = {}
+        self.commit_lock = threading.Lock()
 
     def relative_path(
         self,
@@ -242,7 +247,12 @@ class DebouncingEventHandler(FileSystemEventHandler):
             elif self.verbose:
                 report_event(event)
 
-        if collapsed:
+        if not collapsed:
+            return
+
+        if self.grace > 0:
+            self.schedule_grace_commits(collapsed)
+        else:
             repo_path = self.dest_path if self.dest_path else self.base_path
             repo = GitRepo(
                 repo_path,
@@ -252,6 +262,78 @@ class DebouncingEventHandler(FileSystemEventHandler):
                 message=self.message,
             )
             repo.commit_changes(collapsed)
+            if self.remotes:
+                repo.push(self.remotes)
+
+    def schedule_grace_commits(
+        self,
+        events: list[Event],
+    ):
+        with self.lock:
+            for event in events:
+                if event.type == "renamed":
+                    path = event.new_path
+                    old_path = event.path
+                else:
+                    path = event.path
+                    old_path = None
+
+                if old_path and old_path in self.grace_timers:
+                    self.grace_timers[old_path].cancel()
+                    del self.grace_timers[old_path]
+                    old_event = self.grace_events.pop(old_path, None)
+                    if old_event and old_event.type == "created":
+                        # create + rename = create with new name
+                        event = Event("created", path)
+
+                if path in self.grace_timers:
+                    self.grace_timers[path].cancel()
+                    del self.grace_timers[path]
+                    old_event = self.grace_events.get(path)
+                    if old_event:
+                        if old_event.type == "created" and event.type == "deleted":
+                            # create + delete = nothing
+                            del self.grace_events[path]
+                            continue
+                        elif old_event.type == "created":
+                            # create + anything else = still created
+                            event = Event("created", path)
+                        elif old_event.type == "deleted" and event.type == "created":
+                            # delete + create = modified
+                            event = Event("modified", path)
+
+                self.grace_events[path] = event
+                timer = threading.Timer(
+                    self.grace,
+                    self.commit_after_grace,
+                    args=[path],
+                )
+                self.grace_timers[path] = timer
+                timer.start()
+
+    def commit_after_grace(
+        self,
+        path: str,
+    ):
+        with self.lock:
+            if path not in self.grace_events:
+                return
+            event = self.grace_events.pop(path)
+            del self.grace_timers[path]
+
+        with self.commit_lock:
+            if self.dest_path:
+                repo_path = self.dest_path
+            else:
+                repo_path = self.base_path
+            repo = GitRepo(
+                repo_path,
+                dry_run=self.dry_run,
+                show_git=self.show_git,
+                author=self.author,
+                message=self.message,
+            )
+            repo.commit_changes([event])
             if self.remotes:
                 repo.push(self.remotes)
 
@@ -332,6 +414,7 @@ def watch(
     author: str | None = None,
     message: str | None = None,
     remotes: list[str] = [],
+    grace: float = 0,
 ):
     ignore_patterns = [".git", ".gitignore"] + ignore_patterns
 
@@ -373,6 +456,7 @@ def watch(
         author=author,
         message=message,
         remotes=remotes,
+        grace=grace,
     )
     observer = Observer()
     observer.schedule(handler, str(source), recursive=True)

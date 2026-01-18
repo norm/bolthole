@@ -60,6 +60,14 @@ def main():
         help="override commit author (format: 'Name <email>')",
     )
     parser.add_argument(
+        "-g",
+        "--grace",
+        type=float,
+        default=0,
+        metavar="SECONDS",
+        help="delay commits by grace period (default: 0)",
+    )
+    parser.add_argument(
         "-m",
         "--message",
         metavar="MESSAGE",
@@ -78,6 +86,10 @@ def main():
     args = parser.parse_args()
 
     configure_output(args.timeless)
+
+    if args.grace < 0:
+        print("error: grace period cannot be negative", file=sys.stderr)
+        sys.exit(2)
 
     source = Path(args.source).resolve()
     if not source.exists():
@@ -142,4 +154,5 @@ def main():
         author=args.author,
         message=args.message,
         remotes=args.remote,
+        grace=args.grace,
     )
