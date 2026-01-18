@@ -20,7 +20,7 @@ setup() {
 
 @test "mirror, commit and exit" {
     expected_output=$(sed -e 's/^        //' <<-EOF
-	++ "file.txt"
+        ++ "file.txt"
 	EOF
     )
 
@@ -36,8 +36,8 @@ setup() {
 
 @test "dry run of commit and exit" {
     expected_output=$(sed -e 's/^        //' <<-EOF
-	#  git add -- new.txt
-	#  git commit
+        #  git add -- new.txt
+        #  git commit
 	EOF
     )
 
@@ -53,10 +53,10 @@ setup() {
 
 @test "dry run of mirror, commit and exit" {
     expected_output=$(sed -e 's/^        //' <<-EOF
-	++ "file.txt"
-	#  copy "file.txt"
-	#  git add -- file.txt
-	#  git commit
+        ++ "file.txt"
+        #  copy "file.txt"
+        #  git add -- file.txt
+        #  git commit
 	EOF
     )
 

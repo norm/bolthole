@@ -312,7 +312,7 @@ def watch(
     dry_run: bool = False,
     verbose: bool = False,
     watchdog_debug: bool = False,
-    ignore_patterns: list[str] | None = None,
+    ignore_patterns: list[str] = [],
     show_git: bool = False,
     source_label: str | None = None,
     dest_label: str | None = None,
@@ -320,8 +320,6 @@ def watch(
     author: str | None = None,
     message: str | None = None,
 ):
-    if ignore_patterns is None:
-        ignore_patterns = []
     ignore_patterns = [".git", ".gitignore"] + ignore_patterns
 
     if dest:

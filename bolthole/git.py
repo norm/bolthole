@@ -52,7 +52,7 @@ class GitRepo:
         "diff",
         "status",
     }
-    READ_ONLY_COMMANDS = {
+    DRY_RUN_ALLOWED = {
         "diff",
         "status",
     }
@@ -74,7 +74,7 @@ class GitRepo:
 
         formatted = " ".join(shlex.quote(arg) for arg in display_parts)
 
-        if self.dry_run and command not in self.READ_ONLY_COMMANDS:
+        if self.dry_run and command not in self.DRY_RUN_ALLOWED:
             output(f"#  {formatted}")
             return subprocess.CompletedProcess(args=[], returncode=0)
 
