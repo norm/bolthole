@@ -84,3 +84,11 @@ function check_commit_message {
     actual=$(git -C "$repo" log -1 --format=%s)
     diff -u <(echo "$expected") <(echo "$actual")
 }
+
+function check_commit_author {
+    local repo="$1"
+    local expected="$2"
+    local actual
+    actual=$(git -C "$repo" log -1 --format="%an <%ae>")
+    diff -u <(echo "$expected") <(echo "$actual")
+}

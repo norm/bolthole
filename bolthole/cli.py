@@ -53,6 +53,18 @@ def main():
         action="store_true",
         help="commit and exit without watching for changes",
     )
+    parser.add_argument(
+        "-a",
+        "--author",
+        metavar="AUTHOR",
+        help="override commit author (format: 'Name <email>')",
+    )
+    parser.add_argument(
+        "-m",
+        "--message",
+        metavar="MESSAGE",
+        help="override commit message",
+    )
     parser.add_argument("source")
     parser.add_argument("dest", nargs="?")
     args = parser.parse_args()
@@ -110,4 +122,6 @@ def main():
         source_label=args.source,
         dest_label=args.dest,
         once=args.once,
+        author=args.author,
+        message=args.message,
     )

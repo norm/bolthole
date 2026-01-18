@@ -116,6 +116,8 @@ def initial_sync(
     ignore_patterns: list[str],
     dry_run: bool = False,
     show_git: bool = False,
+    author: str | None = None,
+    message: str | None = None,
 ):
     if not dry_run:
         dest.mkdir(parents=True, exist_ok=True)
@@ -136,7 +138,13 @@ def initial_sync(
     for event in events:
         apply_event(event, source, dest, dry_run=dry_run, verbose=False)
 
-    repo = GitRepo(dest, dry_run=dry_run, show_git=show_git)
+    repo = GitRepo(
+        dest,
+        dry_run=dry_run,
+        show_git=show_git,
+        author=author,
+        message=message,
+    )
     if dry_run:
         if events:
             repo.commit_changes(events)
@@ -157,6 +165,8 @@ class DebouncingEventHandler(FileSystemEventHandler):
         verbose: bool = False,
         watchdog_debug: bool = False,
         show_git: bool = False,
+        author: str | None = None,
+        message: str | None = None,
     ):
         super().__init__()
         self.base_path = base_path
@@ -166,6 +176,8 @@ class DebouncingEventHandler(FileSystemEventHandler):
         self.verbose = verbose
         self.watchdog_debug = watchdog_debug
         self.show_git = show_git
+        self.author = author
+        self.message = message
         self.ignore_patterns = ignore_patterns
         self.pending_events: list[Event] = []
         self.lock = threading.Lock()
@@ -227,6 +239,8 @@ class DebouncingEventHandler(FileSystemEventHandler):
                 repo_path,
                 dry_run=self.dry_run,
                 show_git=self.show_git,
+                author=self.author,
+                message=self.message,
             ).commit_changes(collapsed)
 
     def on_created(
@@ -303,6 +317,8 @@ def watch(
     source_label: str | None = None,
     dest_label: str | None = None,
     once: bool = False,
+    author: str | None = None,
+    message: str | None = None,
 ):
     if ignore_patterns is None:
         ignore_patterns = []
@@ -314,9 +330,17 @@ def watch(
             dry_run=dry_run,
             ignore_patterns=ignore_patterns,
             show_git=show_git,
+            author=author,
+            message=message,
         )
     else:
-        repo = GitRepo(source, dry_run=dry_run, show_git=show_git)
+        repo = GitRepo(
+            source,
+            dry_run=dry_run,
+            show_git=show_git,
+            author=author,
+            message=message,
+        )
         events = repo.get_uncommitted()
         if events:
             repo.commit_changes(events)
@@ -332,6 +356,8 @@ def watch(
         watchdog_debug=watchdog_debug,
         ignore_patterns=ignore_patterns,
         show_git=show_git,
+        author=author,
+        message=message,
     )
     observer = Observer()
     observer.schedule(handler, str(source), recursive=True)

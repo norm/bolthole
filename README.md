@@ -14,8 +14,6 @@ one commit, not many.
 
 ## Outstanding
 
-- [ ] override commit author
-- [ ] override commit message
 - [ ] push commits to remote
 - [ ] wait before committing to allow more edits
 - [ ] bundle multiple file changes into single commits

@@ -9,7 +9,8 @@ bats_require_minimum_version 1.7.0
 @test "help" {
     expected_output=$(sed -e 's/^        //' <<-EOF
         usage: bolthole [-h] [--version] [--watchdog-debug] [-n] [-v] [--timeless]
-                        [--ignore PATTERN] [--show-git] [--once]
+                        [--ignore PATTERN] [--show-git] [--once] [-a AUTHOR]
+                        [-m MESSAGE]
                         source [dest]
 
         positional arguments:
@@ -17,15 +18,19 @@ bats_require_minimum_version 1.7.0
           dest
 
         options:
-          -h, --help        show this help message and exit
-          --version         show program's version number and exit
-          --watchdog-debug  show raw filesystem events
-          -n, --dry-run     take no actions, but report what would happen
-          -v, --verbose     show file updates as well as actions taken
-          --timeless        omit timestamps from output
-          --ignore PATTERN  ignore files matching pattern (repeatable)
-          --show-git        display git commands and their output
-          --once            commit and exit without watching for changes
+          -h, --help            show this help message and exit
+          --version             show program's version number and exit
+          --watchdog-debug      show raw filesystem events
+          -n, --dry-run         take no actions, but report what would happen
+          -v, --verbose         show file updates as well as actions taken
+          --timeless            omit timestamps from output
+          --ignore PATTERN      ignore files matching pattern (repeatable)
+          --show-git            display git commands and their output
+          --once                commit and exit without watching for changes
+          -a AUTHOR, --author AUTHOR
+                                override commit author (format: 'Name <email>')
+          -m MESSAGE, --message MESSAGE
+                                override commit message
 	EOF
     )
 
@@ -37,7 +42,8 @@ bats_require_minimum_version 1.7.0
 @test "rejects missing source" {
     expected_output=$(sed -e 's/^        //' <<-EOF
         usage: bolthole [-h] [--version] [--watchdog-debug] [-n] [-v] [--timeless]
-                        [--ignore PATTERN] [--show-git] [--once]
+                        [--ignore PATTERN] [--show-git] [--once] [-a AUTHOR]
+                        [-m MESSAGE]
                         source [dest]
         bolthole: error: the following arguments are required: source
 	EOF

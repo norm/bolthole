@@ -25,10 +25,19 @@ def output(message: str):
 class GitRepo:
     SUBJECT_LINE_LIMIT = 50
 
-    def __init__(self, path, dry_run=False, show_git=False):
+    def __init__(
+        self,
+        path,
+        dry_run=False,
+        show_git=False,
+        author=None,
+        message=None,
+    ):
         self.path = Path(path)
         self.dry_run = dry_run
         self.show_git = show_git
+        self.author = author
+        self.message = message
 
     EXCLUDE_FLAGS = {
         "--no-verify",
@@ -141,20 +150,22 @@ class GitRepo:
                 paths.append(event.new_path)
         self.run_git("add", "--", *paths)
         if self.dry_run:
-            message = self.generate_commit_message(events)
+            message = self.message or self.generate_commit_message(events)
         else:
             staged = self.get_staged()
             if not staged:
                 return
-            message = self.generate_commit_message(staged)
-        self.run_git(
+            message = self.message or self.generate_commit_message(staged)
+        commit_args = [
             "commit",
             "-m", message,
             "--no-verify",
             "--no-gpg-sign",
             "--quiet",
-            check=True,
-        )
+        ]
+        if self.author:
+            commit_args.extend(["--author", self.author])
+        self.run_git(*commit_args, check=True)
 
     @staticmethod
     def generate_commit_message(events):
