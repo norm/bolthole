@@ -132,7 +132,10 @@ def main():
             repo.init()
 
     if args.remote:
-        repo_path = dest if dest else source
+        if dest:
+            repo_path = dest
+        else:
+            repo_path = source
         repo = GitRepo(repo_path)
         for remote in args.remote:
             if not repo.has_remote(remote):

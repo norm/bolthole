@@ -124,7 +124,10 @@ def initial_sync(
         dest.mkdir(parents=True, exist_ok=True)
 
     source_files = list_files(source, ignore_patterns)
-    dest_files = list_files(dest, ignore_patterns) if dest.exists() else set()
+    if dest.exists():
+        dest_files = list_files(dest, ignore_patterns)
+    else:
+        dest_files = set()
 
     events = []
     for rel_path in sorted(source_files):
@@ -253,7 +256,10 @@ class DebouncingEventHandler(FileSystemEventHandler):
         if self.grace > 0:
             self.schedule_grace_commits(collapsed)
         else:
-            repo_path = self.dest_path if self.dest_path else self.base_path
+            if self.dest_path:
+                repo_path = self.dest_path
+            else:
+                repo_path = self.base_path
             repo = GitRepo(
                 repo_path,
                 dry_run=self.dry_run,

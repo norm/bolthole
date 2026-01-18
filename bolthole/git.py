@@ -58,7 +58,10 @@ class GitRepo:
     }
 
     def run_git(self, *args, **kwargs):
-        command = args[0] if args else None
+        if args:
+            command = args[0]
+        else:
+            command = None
         display_parts = ["git"]
         skip_next = False
         for arg in args:
@@ -163,12 +166,18 @@ class GitRepo:
                 paths.append(event.new_path)
         self.run_git("add", "--", *paths)
         if self.dry_run:
-            message = self.message or self.generate_commit_message(events)
+            if self.message:
+                message = self.message
+            else:
+                message = self.generate_commit_message(events)
         else:
             staged = self.get_staged()
             if not staged:
                 return
-            message = self.message or self.generate_commit_message(staged)
+            if self.message:
+                message = self.message
+            else:
+                message = self.generate_commit_message(staged)
         commit_args = [
             "commit",
             "-m", message,

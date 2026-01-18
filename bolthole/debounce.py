@@ -82,7 +82,9 @@ def collapse_events(
 
         elif event.type == "renamed":
             src, dst = event.path, event.new_path
-            src_origin = find_origin(renames, src) or src
+            src_origin = find_origin(renames, src)
+            if not src_origin:
+                src_origin = src
             src_state = states.get(src)
             dst_state = states.get(dst)
 
