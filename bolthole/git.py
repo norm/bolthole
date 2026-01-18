@@ -1,8 +1,25 @@
 import shlex
 import subprocess
+from datetime import datetime
 from pathlib import Path
 
 from bolthole.debounce import Event
+
+
+_timeless = False
+
+
+def configure_output(timeless: bool):
+    global _timeless
+    _timeless = timeless
+
+
+def output(message: str):
+    if _timeless:
+        print(message, flush=True)
+    else:
+        ts = datetime.now().strftime("%H:%M:%S ")
+        print(f"{ts}{message}", flush=True)
 
 
 class GitRepo:
@@ -49,18 +66,14 @@ class GitRepo:
         formatted = " ".join(shlex.quote(arg) for arg in display_parts)
 
         if self.dry_run and command not in self.READ_ONLY_COMMANDS:
-            print(f"#  {formatted}", flush=True)
+            output(f"#  {formatted}")
             return subprocess.CompletedProcess(args=[], returncode=0)
 
         show_this = self.show_git and command not in self.EXCLUDE_COMMANDS
         if show_this:
-            print(f"%  {formatted}", flush=True)
+            output(f"%  {formatted}")
 
         result = subprocess.run(["git", "-C", str(self.path), *args], **kwargs)
-
-        if show_this and result.stdout:
-            for line in result.stdout.splitlines():
-                print(f">  {line}", flush=True)
 
         return result
 

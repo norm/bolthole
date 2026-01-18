@@ -5,7 +5,6 @@ import shutil
 import signal
 import stat
 import threading
-from datetime import datetime
 from pathlib import Path
 from types import FrameType
 
@@ -13,7 +12,7 @@ from watchdog.events import FileSystemEvent, FileSystemEventHandler
 from watchdog.observers import Observer
 
 from bolthole.debounce import Event, collapse_events
-from bolthole.git import GitRepo
+from bolthole.git import GitRepo, output
 
 
 def should_ignore(rel_path: str, patterns: list[str]) -> bool:
@@ -27,30 +26,22 @@ def should_ignore(rel_path: str, patterns: list[str]) -> bool:
     return False
 
 
-def format_timestamp(timeless: bool) -> str:
-    if timeless:
-        return ""
-    return datetime.now().strftime("%H:%M:%S ")
-
-
-def report_event(event: Event, timeless: bool):
-    ts = format_timestamp(timeless)
+def report_event(event: Event):
     if event.type == "renamed":
-        print(f'{ts}   "{event.path}" renamed "{event.new_path}"', flush=True)
+        output(f'   "{event.path}" renamed "{event.new_path}"')
     elif event.type == "modified":
-        print(f'{ts}   "{event.path}" updated', flush=True)
+        output(f'   "{event.path}" updated')
     else:
-        print(f'{ts}   "{event.path}" {event.type}', flush=True)
+        output(f'   "{event.path}" {event.type}')
 
 
-def report_action(event: Event, timeless: bool):
-    ts = format_timestamp(timeless)
+def report_action(event: Event):
     if event.type == "renamed":
-        print(f'{ts}++ "{event.path}" -> "{event.new_path}"', flush=True)
+        output(f'++ "{event.path}" -> "{event.new_path}"')
     elif event.type == "deleted":
-        print(f'{ts}-- "{event.path}"', flush=True)
+        output(f'-- "{event.path}"')
     else:
-        print(f'{ts}++ "{event.path}"', flush=True)
+        output(f'++ "{event.path}"')
 
 
 def list_files(
@@ -85,19 +76,18 @@ def apply_event(
     dest: Path,
     dry_run: bool = False,
     verbose: bool = False,
-    timeless: bool = False,
 ):
     if verbose:
-        report_event(event, timeless)
-    report_action(event, timeless)
+        report_event(event)
+    report_action(event)
 
     if dry_run:
         if event.type in ("created", "modified"):
-            print(f'#  copy "{event.path}"', flush=True)
+            output(f'#  copy "{event.path}"')
         elif event.type == "deleted":
-            print(f'#  delete "{event.path}"', flush=True)
+            output(f'#  delete "{event.path}"')
         elif event.type == "renamed":
-            print(f'#  rename "{event.path}" to "{event.new_path}"', flush=True)
+            output(f'#  rename "{event.path}" to "{event.new_path}"')
         return
 
     if event.type in ("created", "modified"):
@@ -125,7 +115,6 @@ def initial_sync(
     dest: Path,
     ignore_patterns: list[str],
     dry_run: bool = False,
-    timeless: bool = False,
     show_git: bool = False,
 ):
     if not dry_run:
@@ -145,10 +134,7 @@ def initial_sync(
         events.append(Event("deleted", rel_path))
 
     for event in events:
-        apply_event(
-            event, source, dest,
-            dry_run=dry_run, verbose=False, timeless=timeless,
-        )
+        apply_event(event, source, dest, dry_run=dry_run, verbose=False)
 
     repo = GitRepo(dest, dry_run=dry_run, show_git=show_git)
     if dry_run:
@@ -169,7 +155,6 @@ class DebouncingEventHandler(FileSystemEventHandler):
         debounce_delay: float = 0.1,
         dry_run: bool = False,
         verbose: bool = False,
-        timeless: bool = False,
         watchdog_debug: bool = False,
         show_git: bool = False,
     ):
@@ -179,7 +164,6 @@ class DebouncingEventHandler(FileSystemEventHandler):
         self.debounce_delay = debounce_delay
         self.dry_run = dry_run
         self.verbose = verbose
-        self.timeless = timeless
         self.watchdog_debug = watchdog_debug
         self.show_git = show_git
         self.ignore_patterns = ignore_patterns
@@ -201,12 +185,9 @@ class DebouncingEventHandler(FileSystemEventHandler):
         if not self.watchdog_debug:
             return
         if event.type == "renamed":
-            print(
-                f"watchdog: {event.type} {event.path} {event.new_path}",
-                flush=True,
-            )
+            output(f"watchdog: {event.type} {event.path} {event.new_path}")
         else:
-            print(f"watchdog: {event.type} {event.path}", flush=True)
+            output(f"watchdog: {event.type} {event.path}")
 
     def queue_event(
         self,
@@ -236,10 +217,9 @@ class DebouncingEventHandler(FileSystemEventHandler):
                     event, self.base_path, self.dest_path,
                     dry_run=self.dry_run,
                     verbose=self.verbose,
-                    timeless=self.timeless,
                 )
             elif self.verbose:
-                report_event(event, self.timeless)
+                report_event(event)
 
         if collapsed:
             repo_path = self.dest_path if self.dest_path else self.base_path
@@ -317,7 +297,6 @@ def watch(
     dest: Path | None = None,
     dry_run: bool = False,
     verbose: bool = False,
-    timeless: bool = False,
     watchdog_debug: bool = False,
     ignore_patterns: list[str] | None = None,
     show_git: bool = False,
@@ -333,7 +312,6 @@ def watch(
         initial_sync(
             source, dest,
             dry_run=dry_run,
-            timeless=timeless,
             ignore_patterns=ignore_patterns,
             show_git=show_git,
         )
@@ -351,7 +329,6 @@ def watch(
         dest_path=dest,
         dry_run=dry_run,
         verbose=verbose,
-        timeless=timeless,
         watchdog_debug=watchdog_debug,
         ignore_patterns=ignore_patterns,
         show_git=show_git,
@@ -370,9 +347,9 @@ def watch(
     observer.start()
 
     if dest_label:
-        print(f"   Copying {source_label} to {dest_label}...", flush=True)
+        output(f"   Copying {source_label} to {dest_label}...")
     else:
-        print(f"   Watching {source_label}...", flush=True)
+        output(f"   Watching {source_label}...")
 
     try:
         while True:

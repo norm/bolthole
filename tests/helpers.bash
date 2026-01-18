@@ -21,7 +21,7 @@ function wait_for_debounce {
 
 function wait_for_bolthole_ready {
     for i in {1..50}; do
-        if grep -qE "^   (Copying|Watching) " "$BATS_TEST_TMPDIR/out.txt" 2>/dev/null; then
+        if grep -qE "(Copying|Watching) " "$BATS_TEST_TMPDIR/out.txt" 2>/dev/null; then
             return 0
         fi
         sleep 0.02

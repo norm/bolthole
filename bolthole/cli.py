@@ -3,7 +3,7 @@ import sys
 from importlib.metadata import version
 from pathlib import Path
 
-from bolthole.git import GitRepo
+from bolthole.git import GitRepo, configure_output
 from bolthole.watcher import watch
 
 
@@ -57,6 +57,8 @@ def main():
     parser.add_argument("dest", nargs="?")
     args = parser.parse_args()
 
+    configure_output(args.timeless)
+
     source = Path(args.source).resolve()
     if not source.exists():
         print(
@@ -102,7 +104,6 @@ def main():
         dest=dest,
         dry_run=args.dry_run,
         verbose=args.verbose,
-        timeless=args.timeless,
         watchdog_debug=args.watchdog_debug,
         ignore_patterns=args.ignore,
         show_git=args.show_git,

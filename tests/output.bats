@@ -12,19 +12,6 @@ teardown() {
     teardown_bolthole
 }
 
-@test "output includes timestamp" {
-    bolthole "$BATS_TEST_TMPDIR/source" "$BATS_TEST_TMPDIR/dest" >"$BATS_TEST_TMPDIR/out.txt" 2>&1 &
-    pid=$!
-    wait_for_bolthole_ready
-
-    echo "modified" > "$BATS_TEST_TMPDIR/source/file.txt"
-    wait_for_debounce
-
-    output=$(tail -n +2 "$BATS_TEST_TMPDIR/out.txt")
-    echo "$output"
-    [[ "$output" =~ ^[0-9]{2}:[0-9]{2}:[0-9]{2}\ \+\+\ \"file\.txt\"$ ]]
-}
-
 @test "new file" {
     expected_output=$(sed -e 's/^        //' <<-EOF
         ++ "new.txt"
@@ -331,3 +318,43 @@ teardown() {
     diff -u <(echo "$expected_output") <(bolthole_log)
 }
 
+@test "dry-run output includes timestamp" {
+    create_file "source/rename-me.txt" "rename"
+    create_file "source/delete-me.txt" "delete"
+
+    bolthole -n -v --watchdog-debug "$BATS_TEST_TMPDIR/source" "$BATS_TEST_TMPDIR/dest" >"$BATS_TEST_TMPDIR/out.txt" 2>&1 &
+    pid=$!
+    wait_for_bolthole_ready
+
+    create_file "source/new.txt" "new"
+    echo "modified" > "$BATS_TEST_TMPDIR/source/file.txt"
+    mv "$BATS_TEST_TMPDIR/source/rename-me.txt" "$BATS_TEST_TMPDIR/source/renamed.txt"
+    rm "$BATS_TEST_TMPDIR/source/delete-me.txt"
+    wait_for_debounce
+    kill $pid 2>/dev/null; wait $pid 2>/dev/null || true
+
+    cat "$BATS_TEST_TMPDIR/out.txt"
+    [ -s "$BATS_TEST_TMPDIR/out.txt" ]
+    [ -z "$(grep -vE '^[0-9]{2}:[0-9]{2}:[0-9]{2} ' "$BATS_TEST_TMPDIR/out.txt")" ]
+}
+
+@test "show-git output includes timestamp" {
+    create_file "source/rename-me.txt" "rename"
+    create_file "source/delete-me.txt" "delete"
+    init_source_repo
+
+    bolthole -v --watchdog-debug --show-git "$BATS_TEST_TMPDIR/source" >"$BATS_TEST_TMPDIR/out.txt" 2>&1 &
+    pid=$!
+    wait_for_bolthole_ready
+
+    create_file "source/new.txt" "new"
+    echo "modified" > "$BATS_TEST_TMPDIR/source/file.txt"
+    mv "$BATS_TEST_TMPDIR/source/rename-me.txt" "$BATS_TEST_TMPDIR/source/renamed.txt"
+    rm "$BATS_TEST_TMPDIR/source/delete-me.txt"
+    wait_for_debounce
+    kill $pid 2>/dev/null; wait $pid 2>/dev/null || true
+
+    cat "$BATS_TEST_TMPDIR/out.txt"
+    [ -s "$BATS_TEST_TMPDIR/out.txt" ]
+    [ -z "$(grep -vE '^[0-9]{2}:[0-9]{2}:[0-9]{2} ' "$BATS_TEST_TMPDIR/out.txt")" ]
+}
