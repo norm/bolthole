@@ -12,7 +12,7 @@ teardown() {
 
 @test "creating mirror prompts for remote" {
     expected_output=$(sed -e 's/^        //' <<-EOF
-        remote 'origin' need to be added
+        remote 'origin' needs to be added
 	EOF
     )
 
@@ -26,7 +26,7 @@ teardown() {
 
 @test "remote not configured" {
     expected_output=$(sed -e 's/^        //' <<-EOF
-        remote 'backup' need to be added
+        remote 'backup' needs to be added
 	EOF
     )
 

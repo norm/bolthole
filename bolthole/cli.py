@@ -159,7 +159,7 @@ def main():
         repo = GitRepo(repo_path)
         for remote in args.remote:
             if not repo.has_remote(remote):
-                print(f"remote '{remote}' need to be added",
+                print(f"remote '{remote}' needs to be added",
                       file=sys.stderr)
                 sys.exit(2)
 
