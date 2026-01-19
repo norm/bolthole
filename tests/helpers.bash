@@ -47,7 +47,7 @@ function teardown_bolthole {
 
 function init_dest_repo {
     mkdir -p "$BATS_TEST_TMPDIR/dest"
-    git -C "$BATS_TEST_TMPDIR/dest" init --quiet
+    git -C "$BATS_TEST_TMPDIR/dest" init --quiet -b main
 
     if [ $# -gt 0 ]; then
         for file in "$@"; do
@@ -59,7 +59,7 @@ function init_dest_repo {
 }
 
 function init_source_repo {
-    git -C "$BATS_TEST_TMPDIR/source" init --quiet
+    git -C "$BATS_TEST_TMPDIR/source" init --quiet -b main
     if [ "$1" = "--gitignore" ]; then
         printf "%s\n" "$2" > "$BATS_TEST_TMPDIR/source/.gitignore"
     fi
@@ -95,7 +95,7 @@ function check_commit_author {
 
 function create_bare_remote {
     local name="$1"
-    git init --bare --quiet "$BATS_TEST_TMPDIR/$name.git"
+    git init --bare --quiet -b main "$BATS_TEST_TMPDIR/$name.git"
 }
 
 function add_remote {
