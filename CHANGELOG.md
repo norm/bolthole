@@ -1,6 +1,11 @@
 # Changelog
 
 
+## [v1.0.1] - 2026-01-19
+
+Fix grace period calculation bug.
+
+
 ## [v1.0] - 2026-01-19
 
 Automatically backup a directory to git — watch a directory for changes,

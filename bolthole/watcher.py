@@ -289,13 +289,11 @@ class DebouncingEventHandler(FileSystemEventHandler):
                     path = event.path
                     old_path = None
 
-                timestamp = now
-
                 if old_path and old_path in self.grace_timers:
                     self.grace_timers[old_path].cancel()
                     del self.grace_timers[old_path]
                     old_event = self.grace_events.pop(old_path, None)
-                    timestamp = self.grace_timestamps.pop(old_path, now)
+                    del self.grace_timestamps[old_path]
                     if old_event and old_event.type == "created":
                         # create + rename = create with new name
                         event = Event("created", path)
@@ -303,7 +301,6 @@ class DebouncingEventHandler(FileSystemEventHandler):
                 if path in self.grace_timers:
                     self.grace_timers[path].cancel()
                     del self.grace_timers[path]
-                    timestamp = self.grace_timestamps.get(path, now)
                     old_event = self.grace_events.get(path)
                     if old_event:
                         if old_event.type == "created" and event.type == "deleted":
@@ -319,7 +316,7 @@ class DebouncingEventHandler(FileSystemEventHandler):
                             event = Event("modified", path)
 
                 self.grace_events[path] = event
-                self.grace_timestamps[path] = timestamp
+                self.grace_timestamps[path] = now
                 timer = threading.Timer(
                     self.grace,
                     self.commit_after_grace,
@@ -366,7 +363,7 @@ class DebouncingEventHandler(FileSystemEventHandler):
             paths_to_remove = []
             for path, timestamp in self.grace_timestamps.items():
                 age = now - timestamp
-                if age >= self.bundle:
+                if age >= self.grace:
                     events_to_commit.append(self.grace_events[path])
                     paths_to_remove.append(path)
 

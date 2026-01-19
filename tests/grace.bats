@@ -272,6 +272,50 @@ teardown() {
     diff -u <(echo "$expected") <(echo "$output")
 }
 
+@test "grace timer is from last edit not first" {
+    create_file "source/existing.txt" "existing"
+    start_bolthole --grace 1.0 --bundle 0.3 "$BATS_TEST_TMPDIR/source" "$BATS_TEST_TMPDIR/dest"
+
+    create_file "source/a.txt" "first"
+    wait_for_debounce
+    sleep 0.4
+
+    create_file "source/b.txt" "second"
+    wait_for_debounce
+    sleep 0.3
+
+    # b.txt still being modified
+    echo "modified" > "$BATS_TEST_TMPDIR/source/b.txt"
+    wait_for_debounce
+
+    # grace for a.txt fires, b.txt is outside of bundle
+    sleep 0.4
+
+    expected_after_a=$(sed -e 's/^        //' <<-EOF
+        Add a.txt
+        Add existing.txt
+	EOF
+    )
+    run git -C "$BATS_TEST_TMPDIR/dest" log --format=%s
+    diff -u <(echo "$expected_after_a") <(echo "$output")
+
+    # b.txt creation timer would fire here, not committed
+    sleep 0.4
+    run git -C "$BATS_TEST_TMPDIR/dest" log --format=%s
+    diff -u <(echo "$expected_after_a") <(echo "$output")
+
+    # b.txt modification timer fires, file is committed
+    sleep 0.3
+    expected_after_b=$(sed -e 's/^        //' <<-EOF
+        Add b.txt
+        Add a.txt
+        Add existing.txt
+	EOF
+    )
+    run git -C "$BATS_TEST_TMPDIR/dest" log --format=%s
+    diff -u <(echo "$expected_after_b") <(echo "$output")
+}
+
 @test "dry-run shows multiple files in bundled commit" {
     create_file "source/existing.txt" "existing"
     create_file "dest/existing.txt" "existing"
