@@ -7,7 +7,38 @@ bats_require_minimum_version 1.7.0
 }
 
 @test "help" {
-    expected_output=$(sed -e 's/^        //' <<-EOF
+    python_minor=$(python -c 'import sys; print(sys.version_info.minor)')
+    if [ "$python_minor" -ge 13 ]; then
+        expected_output=$(sed -e 's/^        //' <<-EOF
+        usage: bolthole [-h] [--version] [--watchdog-debug] [-n] [-v] [--timeless]
+                        [--ignore PATTERN] [--show-git] [--once] [-a AUTHOR]
+                        [-b SECONDS] [-g SECONDS] [-m MESSAGE] [-r REMOTE]
+                        source [dest]
+
+        positional arguments:
+          source
+          dest
+
+        options:
+          -h, --help            show this help message and exit
+          --version             show program's version number and exit
+          --watchdog-debug      show raw filesystem events
+          -n, --dry-run         take no actions, but report what would happen
+          -v, --verbose         show file updates as well as actions taken
+          --timeless            omit timestamps from output
+          --ignore PATTERN      ignore files matching pattern (repeatable)
+          --show-git            display git commands and their output
+          --once                commit and exit without watching for changes
+          -a, --author AUTHOR   override commit author (format: 'Name <email>')
+          -b, --bundle SECONDS  bundle files older than threshold into single commit
+          -g, --grace SECONDS   delay commits by grace period (default: 0)
+          -m, --message MESSAGE
+                                override commit message
+          -r, --remote REMOTE   push to remote after commit (repeatable)
+	EOF
+        )
+    else
+        expected_output=$(sed -e 's/^        //' <<-EOF
         usage: bolthole [-h] [--version] [--watchdog-debug] [-n] [-v] [--timeless]
                         [--ignore PATTERN] [--show-git] [--once] [-a AUTHOR]
                         [-b SECONDS] [-g SECONDS] [-m MESSAGE] [-r REMOTE]
@@ -38,7 +69,8 @@ bats_require_minimum_version 1.7.0
           -r REMOTE, --remote REMOTE
                                 push to remote after commit (repeatable)
 	EOF
-    )
+        )
+    fi
 
     run bolthole --help
     diff -u <(echo "$expected_output") <(echo "$output")
