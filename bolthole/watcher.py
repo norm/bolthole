@@ -363,7 +363,7 @@ class DebouncingEventHandler(FileSystemEventHandler):
             paths_to_remove = []
             for path, timestamp in self.grace_timestamps.items():
                 age = now - timestamp
-                if age >= self.grace:
+                if age >= self.bundle:
                     events_to_commit.append(self.grace_events[path])
                     paths_to_remove.append(path)
 

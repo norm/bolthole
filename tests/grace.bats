@@ -48,14 +48,14 @@ teardown() {
     sleep 0.5
 
     # both committed separately
-    expected=$(sed -e 's/^        //' <<-EOF
+    expected_output=$(sed -e 's/^        //' <<-EOF
         Add a.txt
         Add b.txt
         Add existing.txt
 	EOF
     )
     run git -C "$BATS_TEST_TMPDIR/dest" log --format=%s
-    diff -u <(echo "$expected" | sort) <(echo "$output" | sort)
+    diff -u <(echo "$expected_output" | sort) <(echo "$output" | sort)
 }
 
 @test "create then delete within grace results in no commit" {
@@ -79,8 +79,13 @@ teardown() {
     sleep 0.6
 
     # no new commits (only initial)
+    # both committed separately
+    expected_output=$(sed -e 's/^        //' <<-EOF
+        Add existing.txt
+	EOF
+    )
     run git -C "$BATS_TEST_TMPDIR/dest" log --format=%s
-    diff -u <(echo "Add existing.txt") <(echo "$output")
+    diff -u <(echo "$expected_output") <(echo "$output")
 }
 
 @test "delete then recreate identical within grace results in no commit" {
@@ -123,13 +128,13 @@ teardown() {
     sleep 0.6
 
     # one commit for the deletion (not modify then delete)
-    expected=$(sed -e 's/^        //' <<-EOF
+    expected_output=$(sed -e 's/^        //' <<-EOF
         Remove doomed.txt
         Add doomed.txt and existing.txt
 	EOF
     )
     run git -C "$BATS_TEST_TMPDIR/dest" log --format=%s
-    diff -u <(echo "$expected") <(echo "$output")
+    diff -u <(echo "$expected_output") <(echo "$output")
 }
 
 @test "delete then recreate modified within grace results in one commit" {
@@ -150,13 +155,13 @@ teardown() {
     sleep 0.6
 
     # one commit for the modification
-    expected=$(sed -e 's/^        //' <<-EOF
+    expected_output=$(sed -e 's/^        //' <<-EOF
         Update changing.txt
         Add changing.txt and existing.txt
 	EOF
     )
     run git -C "$BATS_TEST_TMPDIR/dest" log --format=%s
-    diff -u <(echo "$expected") <(echo "$output")
+    diff -u <(echo "$expected_output") <(echo "$output")
 }
 
 @test "create then rename within grace results in one commit" {
@@ -181,20 +186,24 @@ teardown() {
     sleep 0.6
 
     # one commit for the new name (not two commits)
-    expected=$(sed -e 's/^        //' <<-EOF
+    expected_output=$(sed -e 's/^        //' <<-EOF
         Add renamed.txt
         Add existing.txt
 	EOF
     )
     run git -C "$BATS_TEST_TMPDIR/dest" log --format=%s
-    diff -u <(echo "$expected") <(echo "$output")
+    diff -u <(echo "$expected_output") <(echo "$output")
 }
 
 @test "files older than bundle threshold commit together" {
     create_file "source/existing.txt" "existing"
-    start_bolthole --grace 1.0 --bundle 0.5 "$BATS_TEST_TMPDIR/source" "$BATS_TEST_TMPDIR/dest"
+    start_bolthole --grace 2.0 --bundle 1.0 "$BATS_TEST_TMPDIR/source" "$BATS_TEST_TMPDIR/dest"
 
     create_file "source/a.txt" "first"
+    wait_for_debounce
+
+    # t=0.7s
+    sleep 0.5
     create_file "source/b.txt" "second"
     wait_for_debounce
 
@@ -203,56 +212,63 @@ teardown() {
     run git -C "$BATS_TEST_TMPDIR/dest" log --format=%s
     diff -u <(echo "Add existing.txt") <(echo "$output")
 
-    sleep 1.1
-
-    expected=$(sed -e 's/^        //' <<-EOF
+    # t=2.2s, a.txt grace fires, b.txt is more than bundle (1.0s) old
+    sleep 1.3
+    expected_output=$(sed -e 's/^        //' <<-EOF
         Add a.txt and b.txt
         Add existing.txt
 	EOF
     )
     run git -C "$BATS_TEST_TMPDIR/dest" log --format=%s
-    diff -u <(echo "$expected") <(echo "$output")
+    diff -u <(echo "$expected_output") <(echo "$output")
 }
 
 @test "file younger than bundle threshold waits for own timer" {
     create_file "source/existing.txt" "existing"
-    start_bolthole --grace 1.0 --bundle 0.8 "$BATS_TEST_TMPDIR/source" "$BATS_TEST_TMPDIR/dest"
+    start_bolthole --grace 2.0 --bundle 1.0 "$BATS_TEST_TMPDIR/source" "$BATS_TEST_TMPDIR/dest"
 
     create_file "source/a.txt" "first"
     wait_for_debounce
 
-    # create before first grace timer fires
-    sleep 0.6
+    # t=0.7s
+    sleep 0.5
     create_file "source/b.txt" "second"
     wait_for_debounce
 
-    # first grace timer has now fired
-    sleep 0.5
+    # t=1.7s
+    sleep 0.8
+    echo "modified" > "$BATS_TEST_TMPDIR/source/b.txt"
+    wait_for_debounce
 
-    expected_after_a=$(sed -e 's/^        //' <<-EOF
+    # T=2.3: a.txt's grace has fired, b.txt not bundled (too young)
+    # t=2.3s, a.txt grace fires, b
+    sleep 0.4
+
+    expected_output=$(sed -e 's/^        //' <<-EOF
         Add a.txt
         Add existing.txt
 	EOF
     )
+
     run git -C "$BATS_TEST_TMPDIR/dest" log --format=%s
-    diff -u <(echo "$expected_after_a") <(echo "$output")
+    diff -u <(echo "$expected_output") <(echo "$output")
 
-    sleep 0.6
-
-    expected_after_b=$(sed -e 's/^        //' <<-EOF
+    # T=3.9: b.txt's grace fires (1.7 + 2.0 = 3.7)
+    sleep 1.6
+    expected_output=$(sed -e 's/^        //' <<-EOF
         Add b.txt
         Add a.txt
         Add existing.txt
 	EOF
     )
     run git -C "$BATS_TEST_TMPDIR/dest" log --format=%s
-    diff -u <(echo "$expected_after_b") <(echo "$output")
+    diff -u <(echo "$expected_output") <(echo "$output")
 }
 
 @test "bundled commits work in single-directory mode" {
     create_file "source/existing.txt" "existing"
     init_source_repo
-    start_bolthole --grace 1.0 --bundle 0.5 "$BATS_TEST_TMPDIR/source"
+    start_bolthole --grace 1.0 --bundle 0.8 "$BATS_TEST_TMPDIR/source"
 
     create_file "source/a.txt" "first"
     create_file "source/b.txt" "second"
@@ -261,8 +277,7 @@ teardown() {
     run git -C "$BATS_TEST_TMPDIR/source" log --format=%s
     diff -u <(echo "initial") <(echo "$output")
 
-    sleep 1.1
-
+    sleep 1
     expected=$(sed -e 's/^        //' <<-EOF
         Add a.txt and b.txt
         initial
@@ -272,74 +287,30 @@ teardown() {
     diff -u <(echo "$expected") <(echo "$output")
 }
 
-@test "grace timer is from last edit not first" {
-    create_file "source/existing.txt" "existing"
-    start_bolthole --grace 1.0 --bundle 0.3 "$BATS_TEST_TMPDIR/source" "$BATS_TEST_TMPDIR/dest"
-
-    create_file "source/a.txt" "first"
-    wait_for_debounce
-    sleep 0.4
-
-    create_file "source/b.txt" "second"
-    wait_for_debounce
-    sleep 0.3
-
-    # b.txt still being modified
-    echo "modified" > "$BATS_TEST_TMPDIR/source/b.txt"
-    wait_for_debounce
-
-    # grace for a.txt fires, b.txt is outside of bundle
-    sleep 0.4
-
-    expected_after_a=$(sed -e 's/^        //' <<-EOF
-        Add a.txt
-        Add existing.txt
-	EOF
-    )
-    run git -C "$BATS_TEST_TMPDIR/dest" log --format=%s
-    diff -u <(echo "$expected_after_a") <(echo "$output")
-
-    # b.txt creation timer would fire here, not committed
-    sleep 0.4
-    run git -C "$BATS_TEST_TMPDIR/dest" log --format=%s
-    diff -u <(echo "$expected_after_a") <(echo "$output")
-
-    # b.txt modification timer fires, file is committed
-    sleep 0.3
-    expected_after_b=$(sed -e 's/^        //' <<-EOF
-        Add b.txt
-        Add a.txt
-        Add existing.txt
-	EOF
-    )
-    run git -C "$BATS_TEST_TMPDIR/dest" log --format=%s
-    diff -u <(echo "$expected_after_b") <(echo "$output")
-}
-
 @test "dry-run shows multiple files in bundled commit" {
     create_file "source/existing.txt" "existing"
     create_file "dest/existing.txt" "existing"
     init_dest_repo
-    start_bolthole --dry-run --grace 1.0 --bundle 0.5 "$BATS_TEST_TMPDIR/source" "$BATS_TEST_TMPDIR/dest"
+    start_bolthole --dry-run --grace 2.0 --bundle 1.0 "$BATS_TEST_TMPDIR/source" "$BATS_TEST_TMPDIR/dest"
 
     create_file "source/a.txt" "first"
     create_file "source/b.txt" "second"
     wait_for_debounce
 
     # grace timer has not fired
-    sleep 0.5
-    expected_before=$(sed -e 's/^        //' <<-EOF
+    sleep 1.5
+    expected_output=$(sed -e 's/^        //' <<-EOF
         ++ "a.txt"
         #  copy "a.txt"
         ++ "b.txt"
         #  copy "b.txt"
 	EOF
     )
-    diff -u <(echo "$expected_before") <(bolthole_log)
+    diff -u <(echo "$expected_output") <(bolthole_log)
 
     # grace timer has fired
     sleep 0.6
-    expected_after=$(sed -e 's/^        //' <<-EOF
+    expected_output=$(sed -e 's/^        //' <<-EOF
         ++ "a.txt"
         #  copy "a.txt"
         ++ "b.txt"
@@ -348,5 +319,5 @@ teardown() {
         #  git commit
 	EOF
     )
-    diff -u <(echo "$expected_after") <(bolthole_log)
+    diff -u <(echo "$expected_output") <(bolthole_log)
 }

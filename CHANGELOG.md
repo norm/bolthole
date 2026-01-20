@@ -1,6 +1,11 @@
 # Changelog
 
 
+## [v1.0.2] - 2026-01-20
+
+Properly fix the grace period and bundle calculations.
+
+
 ## [v1.0.1] - 2026-01-19
 
 Fix grace period calculation bug.
